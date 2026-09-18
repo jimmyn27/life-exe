@@ -40,7 +40,7 @@ test('a full childhood leads through elementary, middle, high school and a saved
     if(age>=6 && age<18) {
       const school=getOccupation(life).school;
       assert.ok(school.grades>=0 && school.grades<=100);
-      assert.equal(schoolStage(life,school),age<12?'Elementary school':age<15?'Middle school':'High school');
+      assert.equal(schoolStage(life,school),age<10?'Elementary school':age<14?'Middle school':'High school');
       assert.equal(schoolAction(life,'Study hard'),life);
     }
     life=answerLifeEvent(life,0);

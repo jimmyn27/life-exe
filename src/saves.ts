@@ -73,7 +73,7 @@ function validLife(value: unknown): value is Life {
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
     const school = occupation.school;
-    const activityIds=['chess','debate','art','science','basketball','soccer','track','swimming'];
+    const activityIds=["cooking", "film", "foreign-language", "photography", "robotics", "chess", "book", "history", "student-council", "debate", "math", "science", "business", "honor-society", "politics", "video-games", "art", "badminton", "baseball", "basketball", "cheerleading", "diving", "football", "golf", "gymnastics", "hockey", "lacrosse", "rugby", "soccer", "swimming", "tennis", "track", "volleyball", "wrestling"];
     if(object(school)) {
       if(school.memberships!==undefined && (!Array.isArray(school.memberships) || new Set(school.memberships).size!==school.memberships.length || !school.memberships.every(id=>activityIds.includes(id as string))))return false;
       if(school.activityAttempts!==undefined && (!object(school.activityAttempts) || !Object.entries(school.activityAttempts).every(([id,attempt])=>activityIds.includes(id) && object(attempt) && startAge(attempt.age) && typeof attempt.accepted==='boolean')))return false;

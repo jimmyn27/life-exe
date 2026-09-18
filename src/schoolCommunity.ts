@@ -1,10 +1,10 @@
 import {seededRandom} from './family.ts';
 import {namePool,givenNamesForGender} from './catalogs/us/lifeContent.ts';
 export type SchoolPerson={id:string;name:string;gender:'Male'|'Female';ageOffset:number;relation:'Classmate'|'Teacher'|'Principal'|'Professor';group:string;strength:number;subject?:string};
-export const schoolStageId=(age:number)=>age<12?'primary':age<15?'middle':age<18?'secondary':'university';
-export const classroomSize=(age:number)=>age<12?22:age<15?24:25;
+export const schoolStageId=(age:number)=>age<10?'primary':age<14?'middle':age<18?'secondary':'university';
+export const classroomSize=(age:number)=>age<10?22:age<14?24:25;
 export function advanceSchoolRoster(id:string,age:number,previous:readonly SchoolPerson[]=[]):SchoolPerson[]{
- const stage=schoolStageId(age),transition=age===12 || age===15;
+ const stage=schoolStageId(age),transition=age===10 || age===14;
  const random=seededRandom(`${id}:roster:${age}`);
  const integer=(a:number,b:number)=>a+Math.floor(random()*(b-a+1));
  const used=new Set(previous.map(person=>person.name));

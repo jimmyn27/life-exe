@@ -11,6 +11,6 @@ export function createSocialPage(life: Life): Life {
 export function postSocialUpdate(life: Life, kind: PostKind): Life {
   if (!life.social?.created) return life;
   const gained = { 'Life update': 3, Hobby: 5, Photo: 8 }[kind];
-  const text = { 'Life update': `A little update from my life at age ${life.age}.`, Hobby: 'Made time for something I enjoy today.', Photo: 'Sharing a favourite moment from my day.' }[kind];
+  const text = { 'Life update': `A little update from my life at age ${life.age}.`, Hobby: 'Made time for something I enjoy today.', Photo: 'Sharing a favorite moment from my day.' }[kind];
   return { ...life, social: { ...life.social, followers: life.social.followers + gained, posts: [...life.social.posts, { age: life.age, kind, text, gained }] }, log: [...life.log, { age: life.age, tag: 'SOCIAL', text: `I posted ${kind === 'Hobby' ? 'about a hobby' : kind === 'Photo' ? 'a photo' : 'a life update'} and gained ${gained} followers. I now have ${life.social.followers + gained} followers.` }] };
 }

@@ -9,7 +9,7 @@ export const events: LifeEvent[] = [
     { label: 'Suggest something closer to home', hint: 'A coffee and a good conversation.', outcome: 'Maya and I caught up over coffee instead.', effect: { Happiness: 2 } },
     { label: 'Enjoy a quiet weekend', hint: 'Sometimes you need time to yourself.', outcome: 'I spent a quiet weekend at home and recharged.' }
   ] },
-  { category: 'Personal event', title: 'A new chapter?', text: 'You spot a beginner photography class at the community centre. Something about it catches your attention.', choices: [
+  { category: 'Personal event', title: 'A new chapter?', text: 'You spot a beginner photography class at the community center. Something about it catches your attention.', choices: [
     { label: 'Give it a try', hint: 'You might discover a new interest.', outcome: 'I tried photography and started noticing the little things.', effect: { Smarts: 3, Happiness: 2 } },
     { label: 'Keep looking', hint: 'Find something that feels more like you.', outcome: 'I decided to explore other hobbies.' }
   ] },

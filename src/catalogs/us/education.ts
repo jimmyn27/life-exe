@@ -79,7 +79,7 @@ export const communityCollegePrograms: readonly CommunityCollegeProgram[] = [
 ];
 // Nursing is represented only by its major. No additional nursing program needed.
 export const educationFundingTypes = ['Household payment','Need-based grant','Merit scholarship','Federal student loan','Employer assistance'] as const;
-export const publicSchoolModel = { tuition:'Public K–12 schooling does not charge ordinary tuition; household supplies, transport and activities can cost money.', admission:'One national game enrollment model.', runtimeNote:'The 6/12/15/18 primary, middle, high school and graduation transitions use one national prototype model.' } as const;
+export const publicSchoolModel = { tuition:'Public K–12 schooling does not charge ordinary tuition; household supplies, transport and activities can cost money.', admission:'One national game enrollment model.', runtimeNote:'The 6/10/14/18 primary, middle, high school and graduation transitions use one national prototype model.' } as const;
 
 // Authored postgraduate routes. Any one listed bachelor major qualifies;
 // an empty requiredMajorIds list accepts any cataloged bachelor major.

@@ -8,12 +8,12 @@ const save = current => parseStore(JSON.stringify(upsertLife(emptyStore(),curren
 test('older saves get age-appropriate schooling without invented employment', () => {
   assert.equal(getOccupation(life(0)).school,null);
   const primary = getOccupation(life(6)); assert.equal(primary.school.level,'Primary school'); assert.equal(schoolYear(life(6),primary.school),1);
-  assert.equal(schoolYear(life(11),primary.school),6);
+  assert.equal(schoolYear(life(9),primary.school),4);
   const secondary = getOccupation(life(12)); assert.equal(secondary.highestEducation,'Primary school'); assert.equal(secondary.school.level,'Middle school');
   assert.equal(getOccupation(life(18)).highestEducation,'Secondary school'); assert.equal(getOccupation(life(18)).school,null); assert.equal(getOccupation(life(30)).job,null);
 });
 test('school transitions update completed education and current year', () => {
-  const secondary = advanceOccupation(life(11),12); assert.equal(secondary.highestEducation,'Primary school'); assert.equal(secondary.school.startAge,12);
+  const secondary = advanceOccupation(life(9),10); assert.equal(secondary.highestEducation,'Primary school'); assert.equal(secondary.school.startAge,10);
   const graduate = advanceOccupation({...life(17),occupation:getOccupation(life(17))},18); assert.equal(graduate.highestEducation,'Secondary school'); assert.equal(graduate.school,null);
 });
 test('accepted offers create saved occupation records and relevant contacts, declined offers do not', () => {

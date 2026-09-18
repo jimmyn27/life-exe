@@ -73,7 +73,7 @@ test('life dates follow age and every year after restart has a valid event', () 
   }
   assert.equal(eventForAge(1).title, 'My first words');
   assert.equal(eventForAge(8).title, 'Choosing a hobby');
-  assert.equal(eventForAge(15).title, 'Starting high school');
+  assert.equal(eventForAge(14).title, 'Starting high school');
 });
 
  test('first and last names persist separately and survive restart', () => {

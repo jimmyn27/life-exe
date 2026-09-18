@@ -1,3 +1,4 @@
+import { playSystemSound } from './sounds';
 import { personAddress } from './personAddress';
 import { interactionResult, type InteractionResult } from './interactionResults';
 import { giftOptions } from './gifts';
@@ -19,7 +20,7 @@ import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SN
 
 type Mode = 'desktop' | 'login' | 'off';
 type Modal = 'new' | 'power' | 'restart' | 'quit' | 'delete' | null;
-const titles: Record<WindowId, string> = { Command: 'Command Prompt', Life: 'My Life', Explorer: 'File Explorer', Web: 'Web Surfer', Messenger: 'Messenger' };
+const titles: Record<WindowId, string> = { Command: 'Command Prompt', Life: 'My Life', Explorer: 'File Explorer', Web: 'Enternet Explorer', Messenger: 'Messenger' };
 const icons: Record<WindowId, IconKind> = { Command: 'command', Life: 'computer', Explorer: 'folder', Web: 'web', Messenger: 'messenger' };
 function blankLife(): Life { return { id: 'new-life-placeholder', name: 'New Life', firstName: 'New', lastName: 'Life', city: 'New York City', locationId: DEFAULT_CITY_ID, catalogSnapshotId: US_SNAPSHOT.id, age: 0, birthYear: 2000, balance: 0, stats: { ...initialStats }, log: [] }; }
 function bootstrap() {
@@ -130,7 +131,7 @@ export default function App() {
     try {
       const next = { ...store, activeId: saved.id };
       persistStore(window.localStorage, next);
-      setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); setEvent(null); setEventSource({ kind: 'year' });
+      setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); setEvent(null); setEventSource({ kind: 'year' });
     } catch { setNotice('The character could not be opened because browser storage is unavailable. Your saved characters have not been changed.'); }
   }
   function showNewLife() { setDraftFirstName(''); setDraftLastName(''); setDraftCity(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID); setModal('new'); setMenu(false); }
@@ -141,7 +142,7 @@ export default function App() {
     const id = crypto.randomUUID();
     const family = generateFamily(id, lastName);
     const next = restartLife({ ...blankLife(), id, family, name, firstName, lastName, city: city.name, locationId: city.id });
-    setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); closeModal();
+    setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); closeModal();
   }
   function ageUp() {
     if (ageBlocked) return;
@@ -183,10 +184,10 @@ export default function App() {
     if(action==='Gift'){setEvent({category:'Gift',title:`Gift · ${target}`,text:'Choose a gift. Their response depends on its value and how appropriate it is.',choices:[...giftOptions().map(gift=>({label:`${gift.name} ($${gift.price})`,hint:life.balance<gift.price?'You cannot afford this gift.':'Give this gift.',disabled:life.balance<gift.price,outcome:'',relationship:{id,action,giftId:gift.id}})),{label:'Cancel',hint:'Return to their profile.',outcome:''}]});return;}
     setEvent({category:'Relationship',title:`${action} · ${target}`,text:action === 'Befriend' ? `Become friends with ${target}?` : action === 'Ask for money' ? `Ask ${target} for money? You can ask each parent once this year.` : action === 'Unfriend' ? `End your friendship with ${target}?` : action === 'Ask out' ? `Ask ${target} out on a date?` : action === 'Compliment' ? `Give ${target} a sincere compliment?` : action === 'Insult' ? `Insult ${target}? This may hurt your relationship.` : action === 'Conversation' ? `Have a conversation with ${target}?` : `Would you like to ${action.toLowerCase()} with ${target}?`,choices:[{label:action,hint:'See how they respond.',outcome:'',relationship:{id,action}},{label:'Cancel',hint:'Return to their profile.',outcome:''}]});
   }
-  function turnOff() { setMode('off'); closeModal(); setMenu(false); }
+  function turnOff() { playSystemSound('shutdown'); setMode('off'); closeModal(); setMenu(false); }
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
-  function about() { setMenu(false); setNotice('Life.exe — Luna edition. Web Surfer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
+  function about() { setMenu(false); setNotice('Life.exe — Luna edition. Enternet Explorer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
   const dialogTitle = notice ? 'Life.exe' : result ? 'Interaction outcome' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>

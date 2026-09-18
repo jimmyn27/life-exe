@@ -29,11 +29,11 @@ test('rosters mostly persist yearly, change more at stage transitions, and repla
  for(let age=6;age<=18;age++){
  const previous=current,next=advanceYear(current);assert.equal(next.age,age);
  if(age>6 && age<18){const old=peers(previous),now=peers(next);const retained=now.filter(p=>old.some(o=>o.id===p.id));
- if(age===12 || age===15){assert.ok(retained.length>=old.length*.65 && retained.length<old.length);assert.ok(staff(next).every(p=>!staff(previous).some(o=>o.id===p.id)));}
+ if(age===10 || age===14){assert.ok(retained.length>=old.length*.65 && retained.length<old.length);assert.ok(staff(next).every(p=>!staff(previous).some(o=>o.id===p.id)));}
  else{assert.ok(retained.length>=old.length-2);assert.deepEqual(staff(next),staff(previous));}
  for(const person of retained)assert.deepEqual(person,old.find(o=>o.id===person.id));
  }
- if(age===12)assert.equal(next.occupation.school.level,'Middle school');if(age===15){assert.equal(next.occupation.highestEducation,'Middle school');assert.equal(next.occupation.school.startAge,15);}
+ if(age===10)assert.equal(next.occupation.school.level,'Middle school');if(age===14){assert.equal(next.occupation.highestEducation,'Middle school');assert.equal(next.occupation.school.startAge,14);}
  current=saved(answer(next));
  }
  assert.equal(current.occupation.highestEducation,'Secondary school');assert.equal(current.occupation.school,null);
@@ -52,7 +52,7 @@ test('clubs and sports have persisted random decisions with one attempt per year
  let current=life(12);for(const activity of schoolActivities){const next=applySchoolActivity(current,activity.id);assert.notStrictEqual(next,current);assert.deepEqual(applySchoolActivity(current,activity.id),next);assert.strictEqual(applySchoolActivity(next,activity.id),next);current=next;}
  const loaded=saved(current);assert.deepEqual(loaded.occupation.school.activityAttempts,current.occupation.school.activityAttempts);const enrolled=current.occupation.school.memberships;assert.ok(enrolled.length>0);
  const next=answer(advanceYear(loaded));assert.deepEqual(next.occupation.school.memberships,enrolled);assert.deepEqual(next.occupation.school.activityAttempts,{});
- current={...loaded,age:14};current=answer(advanceYear(current));assert.equal(current.occupation.school.memberships,undefined);assert.equal(current.occupation.school.activityAttempts,undefined);
+ current={...loaded,age:13};current=answer(advanceYear(current));assert.equal(current.occupation.school.memberships,undefined);assert.equal(current.occupation.school.activityAttempts,undefined);
 });
 test('work listings begin at fourteen with part-time; full-time requires the saved graduation credential',()=>{
  assert.deepEqual(workCategories(life(13)),[]);assert.deepEqual(workCategories(life(14)),['Part-time']);assert.deepEqual(workCategories(life(17)),['Part-time']);assert.deepEqual(workCategories(life(18)),['Part-time','Full-time']);assert.deepEqual(workCategories({...life(18),occupation:{highestEducation:'Middle school',school:null,job:null}}),['Part-time']);

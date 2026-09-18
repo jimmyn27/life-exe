@@ -10,11 +10,15 @@ export const libraryJob = (age: number): Job => ({ position: 'Library assistant'
 export function getOccupation(life: Life): Occupation {
   if (life.occupation) {
     const saved=life.occupation;
-    const school:School|null=saved.school?{...saved.school,...(saved.school.level!=='University' && life.age>=12 && life.age<15?{level:'Middle school' as const,startAge:12,duration:3}:{}),roster:saved.school.roster??initialSchoolRoster(life.id,life.age)}:null;
-    return {...saved,highestEducation:saved.highestEducation==='Primary school' && life.age>=15?'Middle school':saved.highestEducation,school};
+    if(saved.school && saved.school.level!=='University' && life.age>=6 && life.age<18){
+      const level=life.age<10?'Primary school':life.age<14?'Middle school':'Secondary school';
+      const changed=saved.school.level!==level;
+      return {...saved,highestEducation:life.age<10?'None':life.age<14?'Primary school':'Middle school',school:{...saved.school,level,startAge:life.age<10?6:life.age<14?10:14,duration:4,roster:changed?initialSchoolRoster(life.id,life.age):saved.school.roster??initialSchoolRoster(life.id,life.age),...(changed?{memberships:[],activityAttempts:{}}:{})}};
+    }
+    return {...saved,school:saved.school?{...saved.school,roster:saved.school.roster??initialSchoolRoster(life.id,life.age)}:null};
   }
-  const school: School | null = life.age >= 6 && life.age < 12 ? { name: 'Maplewood Primary School', level: 'Primary school', startAge: 6, duration: 6, grades: initialGrades(life), popularity: 50 } : life.age >= 12 && life.age < 18 ? { name: life.age<15?'Brookfield Middle School':'Brookfield High School', level: life.age<15?'Middle school':'Secondary school', startAge: life.age<15?12:15, duration: 3, grades: initialGrades(life), popularity: 50 } : null;
-  const result: Occupation = { highestEducation: life.age >= 18 ? 'Secondary school' : life.age >= 15 ? 'Middle school' : life.age >= 12 ? 'Primary school' : 'None', school, job: null };
+  const school: School | null = life.age >= 6 && life.age < 10 ? { name: 'Maplewood Primary School', level: 'Primary school', startAge: 6, duration: 4, grades: initialGrades(life), popularity: 50 } : life.age >= 10 && life.age < 18 ? { name: life.age<14?'Brookfield Middle School':'Brookfield High School', level: life.age<14?'Middle school':'Secondary school', startAge: life.age<14?10:14, duration: 4, grades: initialGrades(life), popularity: 50 } : null;
+  const result: Occupation = { highestEducation: life.age >= 18 ? 'Secondary school' : life.age >= 14 ? 'Middle school' : life.age >= 10 ? 'Primary school' : 'None', school, job: null };
   const acceptance = life.inbox?.find(mail => mail.event.category === 'University acceptance' && mail.decision === 0);
   const employment = life.inbox?.find(mail => mail.event.category === 'Job offer' && mail.decision === 0);
   if (acceptance) { if (life.age < acceptance.age + 4) result.school = university(acceptance.age); else result.highestEducation = 'University'; }
@@ -36,9 +40,9 @@ export function advanceOccupation(life: Life, age: number): Occupation {
     if(occupation.school.level!=='Secondary school' || age>=18) occupation.highestEducation = occupation.school.level;
     occupation.school = null;
   }
-  if (age === 6 || age === 12 || age === 15) {
+  if (age === 6 || age === 10 || age === 14) {
     const next = getOccupation({ ...life, occupation: undefined, inbox: undefined, age }).school;
-    if (next && age >= 12 && current.school) { next.grades = progressedSchool?.grades ?? current.school.grades; next.popularity = progressedSchool?.popularity ?? current.school.popularity; }
+    if (next && age >= 10 && current.school) { next.grades = progressedSchool?.grades ?? current.school.grades; next.popularity = progressedSchool?.popularity ?? current.school.popularity; }
     if(next && current.school?.roster) next.roster=advanceSchoolRoster(life.id,age,current.school.roster);
     occupation.school = next;
   }
@@ -57,12 +61,12 @@ export function occupationContacts(life: Life): { work: Contact[]; school: Conta
 const clamp = (value: number) => Math.max(0,Math.min(100,value));
 function initialGrades(life: Life) { return clamp(Math.round(35 + life.stats.Smarts * .55 + life.stats.Happiness * .1)); }
 export type SchoolAction = 'Study hard' | 'Join an activity';
-export function schoolStage(life: Life, school: School): string { return school.level === 'University' ? 'University' : life.age < 12 ? 'Elementary school' : life.age < 15 ? 'Middle school' : 'High school'; }
-export function schoolName(life: Life, school: School): string { return school.level === 'University' ? school.name : life.age < 12 ? 'Maplewood Elementary School' : life.age < 15 ? 'Brookfield Middle School' : 'Brookfield High School'; }
+export function schoolStage(life: Life, school: School): string { return school.level === 'University' ? 'University' : life.age < 10 ? 'Elementary school' : life.age < 14 ? 'Middle school' : 'High school'; }
+export function schoolName(life: Life, school: School): string { return school.level === 'University' ? school.name : life.age < 10 ? 'Maplewood Elementary School' : life.age < 14 ? 'Brookfield Middle School' : 'Brookfield High School'; }
 export function schoolAction(life: Life, action: SchoolAction): Life {
   const occupation = getOccupation(life);
   const school = occupation.school;
-  if (life.pendingEvent || !school || action==='Join an activity' && life.age<12 || !['Study hard','Join an activity'].includes(action) || school.yearActions?.includes(action)) return life;
+  if (life.pendingEvent || !school || action==='Join an activity' && life.age<10 || !['Study hard','Join an activity'].includes(action) || school.yearActions?.includes(action)) return life;
   const studying = action === 'Study hard';
   return {...life,stats:{...life.stats,Smarts:clamp(life.stats.Smarts+(studying ? 2 : 0)),Happiness:clamp(life.stats.Happiness+(studying ? -1 : 2))},occupation:{...occupation,school:{...school,grades:clamp(school.grades+(studying ? 5 : 0)),popularity:clamp(school.popularity+(studying ? 0 : 5)),yearActions:[...(school.yearActions ?? []),action]}},log:[...life.log,{age:life.age,tag:'EDUCATION',text:studying ? 'I studied hard and improved my grades.' : 'I joined a school activity and got to know my classmates.'}]};
 }
