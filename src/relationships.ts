@@ -1,3 +1,4 @@
+import { personAddress } from './personAddress.ts';
 import { reaction } from './interactionResults.ts';
 import { gifts, giftEffect } from './gifts.ts';
 import { familyMoney, seededRandom } from './family.ts';
@@ -77,12 +78,12 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
     Befriend:`I befriended ${person.name}.`,
     'Ask for money':given ? `I asked my ${person.relation.toLowerCase()} for money. They gave me $${amount}.` : `I asked my ${person.relation.toLowerCase()} for money, but they declined.`,
     'Ask out':accepted ? `I asked ${person.name} out. We are now dating.` : `I asked ${person.name} out, but they politely declined.`,
-    Compliment:response.text.replace(/^You /,'I '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked'),Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
+    Compliment:response.text.replace(/^You /,'I ').replace(/your /g,'my '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked').replace(/your /g,'my '),Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
     'Hook up':accepted ? `I hooked up with ${person.name}.` : `I asked ${person.name} to hook up, but they declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
   const happiness = !first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation'].includes(action) && response.delta<0 ? -3 : ['Ask out','Hook up'].includes(action) && !accepted ? -1 : 2;
   const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(first?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
-  return {...life,balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action]}]};
+  return {...life,balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action].split(person.name).join(personAddress(person,'first'))}]};
 }

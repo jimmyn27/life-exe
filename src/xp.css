@@ -502,3 +502,18 @@
 .result-reaction-track > div{height:100%;background:linear-gradient(#b4df82,#73ac3c)}
 .result-reaction-track.reaction-negative > div{background:linear-gradient(#f3b2a3,#c86049)}
 .result-change{color:#53647b;font-size:11px}
+
+.lifeconnect-columns.with-contacts{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,34%);gap:20px;align-items:start}
+.lifeconnect-main{min-width:0}
+.lifeconnect-contacts{padding:12px;border:1px solid #d2deec;background:#f8fbff;min-width:0}
+.lifeconnect-contacts > h3{margin:0 0 12px;color:#265d99;font-size:14px}
+.lifeconnect-contacts .contact-row{gap:5px}
+.lifeconnect-contacts .contact-relationship-meter{width:45px}
+.contact-panel{position:relative;min-width:0}
+.contact-name-link{border:0;padding:0;background:none;color:#265d99;font:inherit;font-weight:bold;cursor:pointer;text-align:left}
+.contact-name-link:hover{text-decoration:underline}
+.contact-details-popup{position:absolute;inset:0 0 auto;background:#ece9d8;border:2px solid #0855dc;border-radius:5px;box-shadow:3px 4px 12px #0005;z-index:3}
+.contact-details-title{display:flex;align-items:center;justify-content:space-between;padding:5px 7px;background:linear-gradient(#3591ff,#0058e7);color:#fff}
+.contact-details-title button{min-width:24px;padding:1px 5px}
+.contact-details-body{padding:0 12px 12px;background:#fff;max-height:55vh;overflow:auto}
+@media(max-width:700px){.lifeconnect-columns.with-contacts{grid-template-columns:1fr}}

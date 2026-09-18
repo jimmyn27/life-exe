@@ -1,3 +1,4 @@
+import { personAddress } from './personAddress.ts';
 import { seededRandom } from './family.ts';
 import { giftEffect, gifts } from './gifts.ts';
 import type { Life } from './saves';
@@ -10,10 +11,10 @@ export function reaction(life:Life,person:Person,action:RelationshipAction,giftI
  const value=Math.min(100,Math.round(sample*100));
  const delta=value<=15?-4:value<=35?-2:value<=55?2:value<=75?4:7;
  const topics=life.age<6?['your favorite toys','animals','a story you heard','what to play next']:['your favorite movies','music','school','your plans for the future','sports','a funny memory'];
- const text=action==='Compliment'?compliments[Math.floor(random()*compliments.length)].replace('NAME',person.name):action==='Conversation'?`You and ${person.name} talked about ${topics[Math.floor(random()*topics.length)]}.`:'';
+ const text=action==='Compliment'?compliments[Math.floor(random()*compliments.length)].replace('NAME',personAddress(person)):action==='Conversation'?`You and ${personAddress(person)} talked about ${topics[Math.floor(random()*topics.length)]}.`:'';
  if(action==='Gift'){
   const gift=gifts.find(item=>item.id===giftId),effect=gift?giftEffect(life,person,gift):6;
-  return {delta:effect,value:effect<0?Math.max(0,15+effect):Math.min(100,45+effect*4),text:gift?`You gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}).`:`You gave ${person.name} a gift.`};
+  return {delta:effect,value:effect<0?Math.max(0,15+effect):Math.min(100,45+effect*4),text:gift?`You gave ${personAddress(person)} ${gift.name.toLowerCase()} ($${gift.price}).`:`You gave ${personAddress(person)} a gift.`};
  }
  return {delta,value:delta<0?Math.round(value/35*12):Math.min(100,45+delta*7),text};
 }
@@ -25,5 +26,5 @@ export function interactionResult(before:Life,after:Life,person:Person,action:Re
  const pronoun=person.gender==='Female'?'Her':'His';
  const log=after.log.at(-1)?.text??'';
  const text=hasBar?response.text:log.replace(/^I was /,'You were ').replace(/^I /,'You ').replace(/my /g,'your ').replace(/We /g,'You both ').replace(/our relationship/g,'your relationship').replace(/my friendship/g,'your friendship');
- return {title:`${action} · ${person.name}`,text,change,...(hasBar?{meter:{label:`${pronoun} ${action==='Conversation'?'agreement':'appreciation'}`,value:repeated || change===0?50:response.value}}:{}),...(repeated?{note:'You already received the relationship effect of this interaction this year.'}:hasBar && change===0?{note:'Your relationship is already at its limit.'}:{})};
+ return {title:`${action} · ${personAddress(person,'label')}`,text,change,...(hasBar?{meter:{label:`${pronoun} ${action==='Conversation'?'agreement':'appreciation'}`,value:repeated || change===0?50:response.value}}:{}),...(repeated?{note:'You already received the relationship effect of this interaction this year.'}:hasBar && change===0?{note:'Your relationship is already at its limit.'}:{})};
 }

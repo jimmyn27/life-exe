@@ -1,3 +1,4 @@
+import {personAddress} from '../src/personAddress.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {namePool,givenNamesForGender} from '../src/catalogs/us/lifeContent.ts';
@@ -72,7 +73,7 @@ test('school staff actions change on befriending and survive saved contact profi
  const current=life(12),teacher=characters(current).school.find(p=>p.relation==='Teacher');
  assert.deepEqual(availableActions(teacher,current),['Act up','Befriend','Compliment','Conversation','Gift','Disrespect','Insult','Suck up']);
  for(const action of ['Act up','Disrespect','Suck up']){
-  const changed=interact(current,teacher.id,action);assert.notEqual(changed,current);assert.match(changed.log.at(-1).text,new RegExp(teacher.name));
+  const changed=interact(current,teacher.id,action);assert.notEqual(changed,current);assert.match(changed.log.at(-1).text,new RegExp(personAddress(teacher,'first').replaceAll('.','\\.')));
   assert.deepEqual(saved(changed).relationships,changed.relationships);
   const repeated=interact(changed,teacher.id,action);assert.equal(repeated.relationships[teacher.id].strength,changed.relationships[teacher.id].strength);
  }
