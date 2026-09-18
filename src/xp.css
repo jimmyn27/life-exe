@@ -486,3 +486,9 @@
 .school-activity-group{margin:22px 0;border-top:1px solid #b7c7df;padding-top:14px}
 .school-activity-group>h3{color:#1e4d88;margin:0 0 12px}
 .web-content .occupation-details{margin:12px 0}
+
+.contact-row > span:nth-child(2){min-width:0;overflow-wrap:anywhere}
+.contact-relationship{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.contact-relationship-meter{display:block;width:clamp(40px,8vw,85px);height:8px;background:#eef3e9;border:1px solid #b4cda2;border-radius:4px;overflow:hidden}
+.contact-relationship-meter > span{display:block;height:100%;background:linear-gradient(#badb94,#75b149)}
+.contact-relationship-value{font-size:10px;color:#526443;width:29px;text-align:right}
