@@ -116,7 +116,7 @@ test('postsecondary catalogs exclude trades and every retained credential has an
     assert.ok(communityCollege.credentials.includes(program.credentialId));
     assert.equal(program.nominalYears,credentials.find(row=>row.id===program.credentialId).nominalYears);
     assert.equal(program.purpose,'employment');
-    assert.ok(!['nursing','architecture','human-resources'].includes(program.majorId));
+    assert.ok(!['nursing','architecture','physics'].includes(program.majorId));
   });
   assert.ok(!trainingPrograms.some(row=>/apprenticeship|automotive|nursing/.test(row.id)));
   assert.ok(!educationFundingTypes.includes('Apprenticeship wages'));

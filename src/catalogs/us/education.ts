@@ -46,7 +46,7 @@ const majorSeeds = [
   ['theology','Theology','humanities','Study religious traditions and theological thought.'],
   ['kinesiology','Kinesiology','healthcare','Study movement, exercise and physical performance.'],
   ['architecture','Architecture','design','Study buildings, space and architectural design.'],
-  ['human-resources','Human Resources','business','Study staffing, employee relations and organizational development.'],
+  ['physics','Physics','science','Study matter, energy, motion and the fundamental laws of nature.'],
   ['dance','Dance','arts','Study dance performance, choreography and movement.'],
   ['hospitality','Hospitality','hospitality','Study lodging, food service, tourism and guest services.'],
 ] as const;
@@ -113,7 +113,7 @@ export const masterBachelorMajorIds = {
  theology:['theology','philosophy','history'],
  kinesiology:['kinesiology','biology','nursing'],
  architecture:['architecture'],
- 'human-resources':['human-resources','business','psychology','sociology'],
+ physics:['physics','mathematics','engineering'],
  dance:['dance'],
  hospitality:['hospitality','business','marketing']
 } as const satisfies Record<MajorId,readonly MajorId[]>;
@@ -136,12 +136,13 @@ export const masterPrograms:readonly GraduateProgram[] = majors.map(major=>({
  credentialId:'master',majorId:major.id,nominalYears:2,
  institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',
  requiredMajorIds:masterBachelorMajorIds[major.id],
- preferredMajorIds:major.id==='business'?['business','accounting-finance','economics','marketing','human-resources']:[],
+ preferredMajorIds:major.id==='business'?['business','accounting-finance','economics','marketing']:[],
  admissionNotes:'Authored national game route. Academic results and program admission are separate future checks. This credential does not award a professional license.'
 }));
+export const medicalBachelorMajorIds = ['biology','chemistry','nursing','kinesiology','physics'] as const satisfies readonly MajorId[];
 export const professionalDegreePrograms:readonly GraduateProgram[] = [
  {id:'law-school',name:'Juris Doctor',credentialId:'jd',majorId:null,nominalYears:3,institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',requiredMajorIds:[],preferredMajorIds:[],admissionNotes:'Any bachelor major. Academic results and law-school admission testing are separate future checks. A national bar examination is required for legal practice; the degree does not grant a license.'},
- {id:'medical-school',name:'Medical degree',credentialId:'md',majorId:null,nominalYears:4,institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',requiredMajorIds:[],preferredMajorIds:[],admissionNotes:'Any bachelor major. Premedical science coursework, academic results and medical-school admission testing are separate future checks. Residency and a national medical license are separate from the degree.'}
+ {id:'medical-school',name:'Medical degree',credentialId:'md',majorId:null,nominalYears:4,institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',requiredMajorIds:medicalBachelorMajorIds,preferredMajorIds:[],admissionNotes:'Requires a bachelor degree in Biology, Chemistry, Nursing, Kinesiology or Physics. This is an authored game rule with no coursework system. Academic results and medical-school admission testing are separate future checks. Residency and a national medical license are separate from the degree.'}
 ];
 export const graduatePrograms:readonly GraduateProgram[] = [...masterPrograms,...professionalDegreePrograms];
 export type GraduateApplicantAward = {credentialId:string;majorId?:string};

@@ -11,10 +11,10 @@ export type Career = { id:string; name:string; industryId:IndustryId; descriptio
 export type Position = { id:string; careerId:string; title:string; rank:number; nominalMinimumExperience:number; nextPositionId:string | null; educationRoutes:readonly EducationRoute[]; employmentType:'full-time'; payBasis:'annual-salary'; annualSalaryRange:readonly [number,number]; salaryBasis:'gameplay-seed'; weeklyHours:number };
 type CareerSeed = [string,string,IndustryId,CredentialId | null,MajorId[],boolean,[string,string,string],[number,number,number]];
 const seeds: CareerSeed[] = [
-  ['retail','Retail','retail',null,['business','marketing','human-resources'],false,['Sales associate','Shift supervisor','Store manager'],[30000,42000,62000]],
-  ['food-service','Food service','food-service',null,['business','human-resources'],false,['Food service worker','Shift lead','Restaurant manager'],[29000,39000,58000]],
+  ['retail','Retail','retail',null,['business','marketing'],false,['Sales associate','Shift supervisor','Store manager'],[30000,42000,62000]],
+  ['food-service','Food service','food-service',null,['business'],false,['Food service worker','Shift lead','Restaurant manager'],[29000,39000,58000]],
   ['hospitality','Hospitality','hospitality',null,['hospitality','business','communications','marketing'],false,['Front desk agent','Front desk supervisor','Hotel manager'],[33000,47000,76000]],
-  ['office','Office administration','administration','high-school',['business','human-resources','communications'],false,['Office assistant','Administrative coordinator','Office manager'],[35000,47000,62000]],
+  ['office','Office administration','administration','high-school',['business','communications'],false,['Office assistant','Administrative coordinator','Office manager'],[35000,47000,62000]],
   ['library','Library support','public-service','high-school',['literature','history','art-history','information-technology'],false,['Library assistant','Senior library assistant','Library support supervisor'],[33000,43000,55000]],
   ['it-support','IT support','information-technology','high-school',['information-technology','computing'],false,['Help desk technician','IT support specialist','IT support manager'],[42000,62000,90000]],
   ['software','Software development','software','bachelor',['computing'],false,['Junior software developer','Software developer','Senior software developer'],[70000,105000,145000]],
@@ -35,7 +35,7 @@ const seeds: CareerSeed[] = [
   ['design','Graphic design','design','bachelor',['graphic-design'],false,['Junior graphic designer','Graphic designer','Senior graphic designer'],[42000,62000,85000]],
   ['legal','Legal practice','legal','jd',['criminology','political-science','philosophy','history','literature'],true,['Associate attorney','Senior associate attorney','Partner'],[80000,140000,220000]],
   ['civil-engineering','Civil engineering','construction','bachelor',['engineering'],true,['Junior civil engineer','Civil engineer','Senior civil engineer'],[65000,90000,120000]],
-  ['human-resources','Human resources','administration','bachelor',['human-resources','business','psychology','sociology'],false,['HR coordinator','HR specialist','HR manager'],[45000,65000,95000]],
+  ['human-resources','Human resources','administration','bachelor',['business','psychology','sociology'],false,['HR coordinator','HR specialist','HR manager'],[45000,65000,95000]],
   ['architecture','Architecture','design','bachelor',['architecture'],true,['Architectural assistant','Architect','Senior architect'],[55000,85000,120000]],
   ['music','Music performance','entertainment',null,['music','fine-arts'],false,['Session musician','Professional musician','Music director'],[35000,55000,80000]],
   ['dance','Dance performance','entertainment',null,['dance','kinesiology','fine-arts'],false,['Company dancer','Principal dancer','Dance director'],[32000,48000,70000]],

@@ -21,10 +21,10 @@ Preferred majors apply to related community college awards as well as university
 
 | Career | Required major: any one | Preferred majors |
 | --- | --- | --- |
-| Retail | None | Business Administration, Marketing, Human Resources |
-| Food service | None | Business Administration, Human Resources |
+| Retail | None | Business Administration, Marketing |
+| Food service | None | Business Administration |
 | Hospitality | None | Hospitality, Business Administration, Communications, Marketing |
-| Office administration | None | Business Administration, Human Resources, Communications |
+| Office administration | None | Business Administration, Communications |
 | Library support | None | Literature, History, Art History, Information Technology |
 | IT support | None | Information Technology, Computer Science |
 | Software development | Computer Science, Information Technology, Mathematics, Engineering | Computer Science |
@@ -45,7 +45,7 @@ Preferred majors apply to related community college awards as well as university
 | Graphic design | Graphic Design, Fine Arts | Graphic Design |
 | Legal practice | No specific undergraduate major; Juris Doctor separately required | Criminology, Political Science, Philosophy, History, Literature |
 | Civil engineering | Engineering | Engineering |
-| Human resources | None | Human Resources, Business Administration, Psychology, Sociology |
+| Human resources | None | Business Administration, Psychology, Sociology |
 | Architecture | Architecture | Architecture |
 | Music performance | None; performance requirements will be separate | Music, Fine Arts |
 | Dance performance | None; performance requirements will be separate | Dance, Kinesiology, Fine Arts |
@@ -92,17 +92,20 @@ These are authored national game admission routes, not a claim that real univers
 | Theology | Theology, Philosophy, History |
 | Kinesiology | Kinesiology, Biology, Nursing |
 | Architecture | Architecture |
-| Human Resources | Human Resources, Business Administration, Psychology, Sociology |
+| Physics | Physics, Mathematics, Engineering |
 | Dance | Dance |
 | Hospitality | Hospitality, Business Administration, Marketing |
 
-Business Administration is labeled Master of Business Administration (MBA). Business Administration, Accounting and Finance, Economics, Marketing and Human Resources are optional preferred backgrounds for this authored MBA route; other bachelor’s majors remain eligible. Master’s Nursing, Engineering and Architecture require their matching bachelor’s major in this simplified model. No master’s degree grants a professional license or substitutes for a JD/medical degree.
+Business Administration is labeled Master of Business Administration (MBA). Business Administration, Accounting and Finance, Economics and Marketing are optional preferred backgrounds for this authored MBA route; other bachelor’s majors remain eligible. Master’s Nursing, Engineering and Architecture require their matching bachelor’s major in this simplified model. No master’s degree grants a professional license or substitutes for a JD/medical degree.
 
 | Professional program | Credential | Length after bachelor’s | Bachelor’s subject requirement | Other requirements reserved for future admission/practice systems |
 | --- | --- | --- | --- | --- |
 | Law school | Juris Doctor | 3 years | Any major | Academic results and admission testing; national bar examination before legal practice |
-| Medical school | Medical degree | 4 years | Any major | Premedical science coursework, academic results and admission testing; residency and national medical license |
+| Medical school | Medical degree | 4 years | Biology, Chemistry, Nursing, Kinesiology or Physics | Academic results and admission testing; residency and national medical license |
 
-JD and medical programs do not add undergraduate majors called Law or Medicine. Professional admission has no preferred undergraduate major in this catalog; existing career preferences remain separate hiring metadata. The ABA describes many valid undergraduate backgrounds for law school (https://www.americanbar.org/groups/legal_education/resources/law-students/pre-law/). The AAMC explains that medical schools do not require or prefer a specific major, while prerequisite coursework varies by school (https://students-residents.aamc.org/applying-medical-school/how-choose-best-premed-major). Science-course prerequisites remain separate from choosing a Biology or Chemistry major.
+JD and medical programs do not add undergraduate majors called Law or Medicine. Professional admission has no preferred undergraduate major in this catalog; existing career preferences remain separate hiring metadata. The ABA describes many valid undergraduate backgrounds for law school (https://www.americanbar.org/groups/legal_education/resources/law-students/pre-law/). The AAMC explains that medical schools do not require or prefer a specific major, while prerequisite coursework varies by school (https://students-residents.aamc.org/applying-medical-school/how-choose-best-premed-major). For this game, medical entry is deliberately simplified to the five selected bachelor’s majors instead of coursework; this authored rule differs from real admissions. No coursework system is planned.
 
-`graduatePrograms` contains 34 routes; `graduateEducationFit` and `meetsGraduateEducation` check completed education only. Tuition, grades, admissions scores, coursework tracking, enrollment, degree completion and licensing are not applied during Age Up by this catalog change. Existing `trainingPrograms` IDs remain compatible.
+`graduatePrograms` contains 34 routes; `graduateEducationFit` and `meetsGraduateEducation` check completed education only. Tuition, grades, admissions scores, enrollment, degree completion and licensing are not applied during Age Up by this catalog change. Existing `trainingPrograms` IDs remain compatible.
+
+
+Physics replaces the Human Resources major and its master’s route. Human Resources remains a career; its preferred bachelor’s backgrounds are Business Administration, Psychology and Sociology. Physics is a university major, with a two-year master’s route accepting Physics, Mathematics or Engineering; it is not added to community-college programs. Medical school requires a bachelor’s award in any one of Biology, Chemistry, Nursing, Kinesiology or Physics. No coursework tracking is required. JD continues to accept any bachelor’s major.
