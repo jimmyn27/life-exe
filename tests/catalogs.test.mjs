@@ -164,7 +164,7 @@ test('career major requirements accept alternatives while preferences never bloc
 });
 
 test('full-time salaries and part-time hourly wages are separate national pay models', () => {
-  assert.equal(positions.length,84); assert.equal(partTimeJobs.length,8);
+  assert.equal(positions.length,84); assert.equal(partTimeJobs.length,13);
   positions.forEach(position=>{
     assert.equal(position.employmentType,'full-time'); assert.equal(position.payBasis,'annual-salary');
     assert.equal(position.hourlyWageRange,undefined);

@@ -8,8 +8,8 @@ export function advanceClassmate(person:SchoolPerson,lifeId:string,age:number,tr
  const stats=npcBaseStats(person.id),random=seededRandom(`${lifeId}:${person.id}:school:${age}`);
  const newStage=transition || person.gradeAge===undefined;
  const grades=newStage?stats.Smarts:person.gradeAge===age?person.grades??stats.Smarts:clamp((person.grades??stats.Smarts)+Math.floor(random()*9)-4);
- let clubs=transition?[]:[...(person.clubs??[])],sports=transition?[]:[...(person.sports??[])];
- if(age>=10 && person.gradeAge!==age){for(const [group,chance,list] of [['Clubs',.35,clubs],['Sports',.3,sports]] as const){if(list.length<2 && random()<chance){const options=schoolActivities.filter(a=>a.group===group && !list.includes(a.id));if(options.length)list.push(options[Math.floor(random()*options.length)].id);}}}
+ let clubs=transition?[]:[...(person.clubs??[])].slice(0,1),sports=transition?[]:[...(person.sports??[])].slice(0,1);
+ if(age>=10 && person.gradeAge!==age){for(const [group,chance,list] of [['Clubs',.35,clubs],['Sports',.3,sports]] as const){if(list.length<1 && random()<chance){const options=schoolActivities.filter(a=>a.group===group && !list.includes(a.id));if(options.length)list.push(options[Math.floor(random()*options.length)].id);}}}
  return {...person,grades,gradeAge:age,clubs,sports};
 }
 export function classmatePopularity(person:SchoolPerson,looks:number):number{return clamp(looks+(person.clubs?.length??0)*4+(person.sports?.length??0)*10);}

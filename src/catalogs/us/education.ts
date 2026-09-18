@@ -132,7 +132,7 @@ export type GraduateProgram = {
 const graduateInstitutions = ['public-university','private-college'] as const;
 export const masterPrograms:readonly GraduateProgram[] = majors.map(major=>({
  id:`master-${major.id}`,
- name:major.id==='business'?'Master of Business Administration (MBA)':`Master’s degree in ${major.name}`,
+ name:`Master’s degree in ${major.name}`,
  credentialId:'master',majorId:major.id,nominalYears:2,
  institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',
  requiredMajorIds:masterBachelorMajorIds[major.id],

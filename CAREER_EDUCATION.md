@@ -96,7 +96,7 @@ These are authored national game admission routes, not a claim that real univers
 | Dance | Dance |
 | Hospitality | Hospitality, Business Administration, Marketing |
 
-Business Administration is labeled Master of Business Administration (MBA). Business Administration, Accounting and Finance, Economics and Marketing are optional preferred backgrounds for this authored MBA route; other bachelor’s majors remain eligible. Master’s Nursing, Engineering and Architecture require their matching bachelor’s major in this simplified model. No master’s degree grants a professional license or substitutes for a JD/medical degree.
+Business Administration is labeled Master’s degree in Business Administration. Business Administration, Accounting and Finance, Economics and Marketing are optional preferred backgrounds for this authored master’s route; other bachelor’s majors remain eligible. Master’s Nursing, Engineering and Architecture require their matching bachelor’s major in this simplified model. No master’s degree grants a professional license or substitutes for a JD/medical degree.
 
 | Professional program | Credential | Length after bachelor’s | Bachelor’s subject requirement | Other requirements reserved for future admission/practice systems |
 | --- | --- | --- | --- | --- |

@@ -115,14 +115,17 @@ export function salaryRangeForPosition(positionId:string): readonly [number,numb
   if (!position) throw new Error('Unknown career position.');
   return position.annualSalaryRange;
 }
-export type PartTimeJob = { id:string; title:string; industryId:IndustryId; employmentType:'part-time'; payBasis:'hourly-wage'; hourlyWageRange:readonly [number,number]; weeklyHoursRange:readonly [number,number]; wageBasis:'gameplay-seed' };
-const partTimeSeeds: [string,string,IndustryId,number,number][] = [
-  ['retail-assistant','Retail assistant','retail',12,18],['cashier','Cashier','retail',11,16],
-  ['barista','Barista','food-service',12,18],['food-counter','Food counter worker','food-service',11,16],
-  ['library-aide','Library aide','public-service',12,18],['office-aide','Office aide','administration',14,20],
-  ['warehouse-assistant','Warehouse assistant','logistics',14,21],['hotel-reception','Hotel receptionist','hospitality',13,19],
+export type PartTimeJob = { id:string; title:string; industryId:IndustryId; employmentType:'part-time'; payBasis:'hourly-wage'; hourlyWageRange:readonly [number,number]; weeklyHoursRange:readonly [number,number]; wageBasis:'gameplay-seed'; minimumAge:number };
+const partTimeSeeds: [string,string,IndustryId,number,number,number][] = [
+ ['babysitter','Babysitter','public-service',10,16,14],['pet-sitter','Pet sitter','public-service',10,16,14],
+ ['grocery-bagger','Grocery bagger','retail',10,14,14],['ice-cream-counter','Ice cream counter worker','food-service',10,15,14],
+ ['food-counter','Food counter worker','food-service',11,16,14],['library-aide','Library aide','public-service',12,18,14],
+ ['retail-assistant','Retail assistant','retail',12,18,16],['cashier','Cashier','retail',11,16,16],
+ ['barista','Barista','food-service',12,18,16],['office-aide','Office aide','administration',14,20,16],
+ ['movie-theater','Movie theater attendant','entertainment',11,17,16],['hotel-reception','Hotel receptionist','hospitality',13,19,16],
+ ['warehouse-assistant','Warehouse assistant','logistics',14,21,18],
 ];
-export const partTimeJobs: readonly PartTimeJob[] = partTimeSeeds.map(([id,title,industryId,low,high]) => ({
-  id,title,industryId,employmentType:'part-time',payBasis:'hourly-wage',
-  hourlyWageRange:[Math.max(unitedStates.employment.nationalHourlyMinimum,low),high],weeklyHoursRange:[8,24],wageBasis:'gameplay-seed',
+export const partTimeJobs: readonly PartTimeJob[] = partTimeSeeds.map(([id,title,industryId,low,high,minimumAge]) => ({
+ id,title,industryId,minimumAge,employmentType:'part-time',payBasis:'hourly-wage',
+ hourlyWageRange:[Math.max(unitedStates.employment.nationalHourlyMinimum,low),high],weeklyHoursRange:[10,20],wageBasis:'gameplay-seed',
 }));

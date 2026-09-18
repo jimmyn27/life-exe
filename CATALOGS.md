@@ -16,7 +16,7 @@ The game uses one fixed modern-US ruleset (`us-2026-v1`) for every city. Life da
 
 ## Deliberate simplifications
 
-- Full-time employment pays an annual USD salary; part-time employment pays an hourly USD wage. National authored ranges vary by job and rank, never by city. Part-time annual earnings will depend on wage, weekly hours and weeks actually worked.
+- Full-time employment pays an annual USD salary; part-time employment pays an hourly USD wage. National authored ranges vary by job and rank, never by city. Part-time offers now use 10–20 weekly hours, with starter jobs at 14 and additional jobs at 16. Runtime annual earnings use the stored hourly wage × weekly hours × 52, paid on the next Age Up without tax; full-time hiring remains a preview.
 - Income tax uses the same 2026 federal bracket reference everywhere. State, county and city income taxes are omitted. Sales and property taxes are disabled rather than silently estimated.
 - A federal hourly floor is the national game floor; real regional/sector/tipped exceptions are omitted. Salaried/hourly pay basis does not itself determine overtime eligibility.
 - Medicaid, CHIP and mandatory/paid-leave simulation are omitted. Healthcare uses one shared model for parent, employer, private, Medicare and uninsured coverage.

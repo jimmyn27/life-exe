@@ -1,3 +1,4 @@
+import {takePartTimeJob} from './partTimeWork';
 import SchedulePanel from './SchedulePanel';
 import {barColor} from './statBars';
 import {manageSchoolActivity} from './schoolActivities';
@@ -45,6 +46,8 @@ export default function App() {
   const [mode, setMode] = useState<Mode>('login');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const deleteTarget = store.lives.find(saved => saved.id === deleteId);
+  const [profileVersion,setProfileVersion]=useState(0);
+  const [messengerProfile,setMessengerProfile]=useState<string|null>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [event, setEvent] = useState<LifeEvent | null>(null);
   const [eventSource, setEventSource] = useState<{ kind: 'year' | 'activity' }>({ kind: boot.life.pendingEvent ? 'year' : 'activity' });
@@ -139,7 +142,7 @@ export default function App() {
     try {
       const next = { ...store, activeId: saved.id };
       persistStore(window.localStorage, next);
-      setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); setEvent(null); setEventSource({ kind: 'year' });
+      setMessengerProfile(null);setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); setEvent(null); setEventSource({ kind: 'year' });
     } catch { setNotice('The character could not be opened because browser storage is unavailable. Your saved characters have not been changed.'); }
   }
   function showNewLife() { setDraftSexuality('Straight'); setDraftFirstName(''); setDraftLastName(''); setDraftCity(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID); setModal('new'); setMenu(false); }
@@ -150,7 +153,7 @@ export default function App() {
     const id = crypto.randomUUID();
     const family = generateFamily(id, lastName);
     const next = restartLife({ ...blankLife(), id, family, name, firstName, lastName, sexuality:draftSexuality, city: city.name, locationId: city.id });
-    setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); closeModal();
+    setMessengerProfile(null);setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); closeModal();
   }
   function ageUp() {
     if (ageBlocked) return;
@@ -164,13 +167,14 @@ export default function App() {
       setLife(previous => answerLifeEvent(previous, index)); setDirty(true); setEvent(null);
       return;
     }
+    if(choice.jobDecision){const next=takePartTimeJob(life,choice.jobDecision.id);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}setEvent(null);return;}
     if(choice.membershipAction){setEvent(null);finishMembershipAction(choice.membershipAction.id,choice.membershipAction.action);return;}
     if(choice.schoolAction){setEvent(null);finishSchoolAction(choice.schoolAction);return;}
     if (choice.relationship) {
-      const { id, action, giftId } = choice.relationship;
+      const { id, action, giftId,invited } = choice.relationship;
       const groups=characters(life),person=[...groups.personal,...groups.work,...groups.school].find(item=>item.id===id);
-      const next=interact(life,id,action,giftId);
-      if(next!==life && person){setLife(next);setDirty(true);setResult(interactionResult(life,next,person,action,giftId));}
+      const next=interact(life,id,action,giftId,invited);
+      if(next!==life && person){setLife(next);setDirty(true);setResult(interactionResult(life,next,person,action,giftId,invited));}
       setEvent(null); return;
     }
     if (!choice.outcome) { setEvent(null); return; }
@@ -213,6 +217,9 @@ export default function App() {
     if(action==='Gift'){setEvent({category:'Gift',title:`Gift · ${target}`,text:'Choose a gift. Their response depends on its value and how appropriate it is.',choices:[...giftOptions().map(gift=>({label:`${gift.name} ($${gift.price})`,hint:life.balance<gift.price?'You cannot afford this gift.':'Give this gift.',disabled:life.balance<gift.price,outcome:'',relationship:{id,action,giftId:gift.id}})),{label:'Cancel',hint:'Return to their profile.',outcome:''}]});return;}
     setEvent({category:'Relationship',title:`${action} · ${target}`,text:action === 'Befriend' ? `Become friends with ${target}?` : action === 'Ask for money' ? `Ask ${target} for money? You can ask each parent once this year.` : action === 'Unfriend' ? `End your friendship with ${target}?` : action === 'Ask out' ? `Ask ${target} out on a date?` : action === 'Compliment' ? `Give ${target} a sincere compliment?` : action === 'Insult' ? `Insult ${target}? This may hurt your relationship.` : action === 'Conversation' ? `Have a conversation with ${target}?` : `Would you like to ${action.toLowerCase()} with ${target}?`,choices:[{label:action,hint:'See how they respond.',outcome:'',relationship:{id,action}},{label:'Cancel',hint:'Return to their profile.',outcome:''}]});
   }
+  function openProfile(id:string){setProfileVersion(v=>v+1);setMessengerProfile(id);openWindow('Messenger');}
+  function finishResult(){const followUp=result?.followUp;setResult(null);if(followUp){setEventSource({kind:'activity'});setEvent(followUp);}else closeModal();}
+  function showJobOffer(id:string){setEventSource({kind:'activity'});setEvent({category:'Work',title:'Take this part-time job?',text:'Start this part-time job? Any current job will be replaced. Your pay is added on the next Age Up.',choices:[{label:'Take the job',hint:'Start working.',outcome:'',jobDecision:{id}},{label:'Cancel',hint:'Keep browsing.',outcome:''}]});}
   function turnOff() { playSystemSound('shutdown'); setMode('off'); closeModal(); setMenu(false); }
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
@@ -224,7 +231,7 @@ export default function App() {
       <div className="desktop-workspace" ref={workspaceRef}>
         <DesktopIcons onOpen={id=>id==='Life'?openMyLife():openWindow(id)}/>
         {windows && windowIds.filter(id => windows[id].status !== 'closed').map(id => <FloatingWindow key={`${life.id}:${id}`} id={id} title={titles[id]} icon={icons[id]} state={windows[id]} bounds={bounds} active={activeId === id} className={`program-window program-${id.toLowerCase()}`} onFocus={() => focusWindow(id)} onChange={rect => setRect(id, rect)} onMinimize={() => minimize(id)} onMaximize={() => toggleMaximize(id)} onClose={() => closeWindow(id)}>
-          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onSchedule={()=>setModal('schedule')} onFinances={()=>{setExplorerPage('Finances');openWindow('Explorer');}} onMembership={membershipAction} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
+          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onContact={openProfile} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onOpenLife={openMyLife} onTakeJob={showJobOffer} onSchedule={()=>setModal('schedule')} onFinances={()=>{setExplorerPage('Finances');openWindow('Explorer');}} onMembership={membershipAction} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} profileId={messengerProfile} profileVersion={profileVersion} onAction={relationshipAction} onOpenLife={openMyLife}/>}
         </FloatingWindow>)}
         <div className="age-up-dock"><span className="age-dock-label">YOUR NEXT CHAPTER</span><button className="classic-button desktop-age-up" disabled={ageBlocked} onClick={ageUp}><span className="age-dock-icon" aria-hidden="true">↑</span><span><strong>Age Up</strong><small>{life.pendingEvent ? "Life event needs a decision" : `Begin age ${life.age + 1}`}</small></span><span className="age-dock-arrow" aria-hidden="true">→</span></button>{life.pendingEvent && !event && <button className="classic-button resume-life-event" onClick={resumeEvent}>Review life event…</button>}</div>
       </div>
@@ -264,7 +271,7 @@ export default function App() {
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
       {notice ? <>
         <div className="modal-content information-content"><span className="info-symbol" aria-hidden="true">i</span><p>{notice}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>OK</button></div>
-      </> : modal === 'schedule' ? <SchedulePanel life={life} onClose={closeModal}/> : danceOpen ? <SchoolDancePanel life={life} outcome={danceOutcome} onResolve={resolveDance} onRetry={()=>setDanceOutcome(null)} onClose={closeModal}/> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className="result-reaction-track" role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`,background:barColor(result.meter.value)}}/></div></div>}{result.bars?.map(bar=><div className="result-reaction" key={bar.label}><strong>{bar.label}</strong><div className="result-reaction-track" role="progressbar" aria-label={bar.label} aria-valuenow={bar.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${bar.value}%`,background:barColor(bar.value)}}/></div></div>)}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
+      </> : modal === 'schedule' ? <SchedulePanel life={life} onClose={closeModal}/> : danceOpen ? <SchoolDancePanel life={life} outcome={danceOutcome} onResolve={resolveDance} onRetry={()=>setDanceOutcome(null)} onClose={closeModal}/> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className="result-reaction-track" role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`,background:barColor(result.meter.value)}}/></div></div>}{result.bars?.map(bar=><div className="result-reaction" key={bar.label}><strong>{bar.label}</strong><div className="result-reaction-track" role="progressbar" aria-label={bar.label} aria-valuenow={bar.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${bar.value}%`,background:barColor(bar.value)}}/></div></div>)}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={finishResult}>OK</button></div></> : modal === 'delete' ? <>
         <div className="modal-content"><h2>Delete {deleteTarget?.name}'s life?</h2><p>This permanently deletes this saved life from this device. This cannot be undone.</p></div><div className="dialog-actions"><button className="classic-button" onClick={deleteCharacter} disabled={!deleteTarget}>Delete life</button><button className="classic-button" autoFocus onClick={closeModal}>Cancel</button></div>
       </> : modal === 'power' ? <>
         <div className="power-content"><h2>Turn off computer</h2><div className="power-options"><button onClick={() => saveCurrent(true)}><Icon kind="save"/><span>Save</span></button><button onClick={() => dirty ? setModal('quit') : turnOff()}><Icon kind="power"/><span>Turn off</span></button><button onClick={() => setModal('restart')}><Icon kind="restart"/><span>Restart</span></button></div><p>{dirty ? 'You have unsaved changes.' : 'Your current life is saved.'}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>Cancel</button></div>

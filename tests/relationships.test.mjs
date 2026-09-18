@@ -9,7 +9,7 @@ test('profiles have player stats, age with the player, and correct parent action
   assert.equal(characters(life(19)).personal[0].age,47);
   assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
   assert.deepEqual(availableActions(maya),relationshipActions.filter(action=>!['Ask for money','Befriend','Act up','Disrespect','Suck up','Make love'].includes(action)));
-  for (const action of ['Ask out','Hook up','Unfriend']) { const current=life(18); assert.equal(interact(current,parent.id,action),current); }
+  for (const action of ['Ask out','Have fun','Unfriend']) { const current=life(18); assert.equal(interact(current,parent.id,action),current); }
 });
 test('interactions change relationships, gifting charges money once per action, and failed gifting is a no-op', () => {
   const current = life(18); const compliment = interact(current,'maya-chen','Compliment');
@@ -19,7 +19,7 @@ test('interactions change relationships, gifting charges money once per action, 
   const broke = {...current,balance:24}; assert.equal(interact(broke,'maya-chen','Gift'),broke);
 });
 test('dating starts at ten while intimacy requires adults and acceptance, and unfriending removes friends and ends dating', () => {
-  const teenager = life(17); assert.equal(interact(teenager,'maya-chen','Ask out').relationships['maya-chen'].status,'dating'); assert.equal(interact(teenager,'maya-chen','Hook up'),teenager);
+  const teenager = life(17); assert.equal(interact(teenager,'maya-chen','Ask out').relationships['maya-chen'].status,'dating'); assert.equal(interact(teenager,'maya-chen','Make love'),teenager);
   const dated = interact(life(18),'maya-chen','Ask out'); assert.equal(dated.relationships['maya-chen'].status,'dating');
   const declined = interact({...dated,relationships:{'maya-chen':{...dated.relationships['maya-chen'],status:'friend',strength:20}}},'maya-chen','Ask out');
   assert.equal(declined.relationships['maya-chen'].status,'friend'); assert.match(declined.log.at(-1).text,/declined/);

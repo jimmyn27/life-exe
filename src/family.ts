@@ -38,7 +38,7 @@ export function generateFamily(id: string, surname: string): Family {
   const career=mother?motherCareer:fatherCareer!, job=jobs[career];
   const ageAtBirth=mother?ages.mother:ages.father;
   const rank=Math.min(2,Math.floor((ageAtBirth-18)/10));
-  return {id:mother?'parent-mother':'parent-father',name:`${givenNamesForGender(mother?'Female':'Male')[integer(0,givenNamesForGender(mother?'Female':'Male').length-1)]} ${mother && !single && random()>.85?namePool.surnames[integer(0,namePool.surnames.length-1)]:surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:job.education,occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
+  return {id:mother?'parent-mother':'parent-father',name:`${givenNamesForGender(mother?'Female':'Male')[integer(0,givenNamesForGender(mother?'Female':'Male').length-1)]} ${mother && !single && random()>.85?namePool.surnames[integer(0,namePool.surnames.length-1)]:surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:career===2?"Bachelor's (Nursing)":career===3?"Bachelor's (Education)":career===4?"Bachelor's (Computer Science)":'High school diploma',occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
  };
  const parents=[makeParent(true),...(!single?[makeParent(false)]:[])];
  const inherit=(key:'Smarts'|'Looks')=>clamp(Math.round(parents.reduce((sum,p)=>sum+p.stats[key],0)/parents.length)+integer(-8,8));

@@ -9,7 +9,7 @@ test('graduation is a required yearly popup, never an email', () => {
   const old = life(); const next = advanceYear(old, true);
   assert.equal(next.age,18); assert.equal(next.inbox.length,0);
   assert.match(next.pendingEvent.event.title,/graduate/);
-  assert.deepEqual(next.stats,old.stats); assert.deepEqual(next.log,[]);
+  assert.equal(next.stats.Health,old.stats.Health);assert.equal(next.stats.Happiness,old.stats.Happiness);for(const key of ['Smarts','Looks'])assert.equal(Math.abs(next.stats[key]-old.stats[key]),1); assert.deepEqual(next.log,[]);
   assert.equal(old.pendingEvent,undefined); assert.equal(advanceYear(next, true),next);
   const answered = answerLifeEvent(next,0);
   assert.equal(answered.age,18); assert.equal(answered.stats.Happiness,100);

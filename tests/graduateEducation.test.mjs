@@ -23,7 +23,7 @@ test('master requirements are OR alternatives on completed bachelor awards, neve
  assert.equal(meetsGraduateEducation('master-computing',[{credentialId:'associate',majorId:'computing'}]),false);
  assert.equal(meetsGraduateEducation('master-computing',[...bachelor('literature'),...bachelor('engineering')]),true);
 });
-test('MBA allows any bachelor subject; preferences never block admission education eligibility',()=>{
+test('Business masters allow any bachelor subject; preferences never block admission education eligibility',()=>{
  assert.deepEqual(graduateEducationFit('master-business',[{credentialId:'bachelor',majorId:'music'}]),{meetsEducationRequirement:true,hasPreferredMajor:false});
  assert.deepEqual(graduateEducationFit('master-business',[{credentialId:'bachelor',majorId:'business'}]),{meetsEducationRequirement:true,hasPreferredMajor:true});
 });

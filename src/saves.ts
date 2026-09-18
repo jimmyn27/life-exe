@@ -21,7 +21,7 @@ const statNames = ['Health', 'Happiness', 'Smarts', 'Looks'] as const;
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 function validEvent(value: unknown): value is LifeEvent {
   if (!object(value) || typeof value.title !== 'string' || typeof value.text !== 'string' || typeof value.category !== 'string' || !Array.isArray(value.choices) || !value.choices.length) return false;
-  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.friendshipDecision===undefined || object(choice.friendshipDecision) && typeof choice.friendshipDecision.id==='string' && choice.friendshipDecision.id.length>0 && typeof choice.friendshipDecision.salvage==='boolean') && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
+  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.jobDecision===undefined || object(choice.jobDecision) && typeof choice.jobDecision.id==='string') && (choice.friendshipDecision===undefined || object(choice.friendshipDecision) && typeof choice.friendshipDecision.id==='string' && choice.friendshipDecision.id.length>0 && typeof choice.friendshipDecision.salvage==='boolean') && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
 }
 function validLife(value: unknown): value is Life {
   if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' || !value.name.trim() || typeof value.city !== 'string') return false;
@@ -60,7 +60,7 @@ function validLife(value: unknown): value is Life {
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
       if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
-      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Flirt','Gift','Hook up','Make love','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Flirt','Gift','Hook up','Have fun','Make love','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
       if(record.friendship!==undefined && typeof record.friendship!=='boolean')return false;
       const friendProfile=record.profile;
       if(friendProfile!==undefined && (!object(friendProfile) || !['name','gender','education','occupation'].every(key=>typeof friendProfile[key]==='string') || !Number.isInteger(friendProfile.ageOffset) || (friendProfile.ageOffset as number)<0 || (friendProfile.ageOffset as number)>100))return false;
@@ -75,6 +75,7 @@ function validLife(value: unknown): value is Life {
     if (!object(occupation) || !['None', 'Primary school', 'Middle school', 'Secondary school', 'University'].includes(occupation.highestEducation as string)) return false;
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
+    if(object(job) && (job.id!==undefined && typeof job.id!=='string' || (job.hourlyWage===undefined)!==(job.weeklyHours===undefined) || job.hourlyWage!==undefined && (typeof job.hourlyWage!=='number' || !Number.isFinite(job.hourlyWage) || job.hourlyWage<=0 || !Number.isInteger(job.weeklyHours) || (job.weeklyHours as number)<10 || (job.weeklyHours as number)>20)))return false;
     const school = occupation.school;
     if(occupation.droppedOut!==undefined && typeof occupation.droppedOut!=='boolean')return false;
     if(object(occupation.school) && (occupation.school.transfers!==undefined && (!Number.isInteger(occupation.school.transfers) || (occupation.school.transfers as number)<0) || occupation.school.danceAskedIds!==undefined && (!Array.isArray(occupation.school.danceAskedIds) || !occupation.school.danceAskedIds.every(id=>typeof id==='string'))))return false;
@@ -113,6 +114,7 @@ export function parseStore(raw: string | null): SaveStore {
 }
 export function loadStore(storage: StorageLike): SaveStore { const store = parseStore(storage.getItem(SAVE_KEY)); return { ...store, lives: store.lives.map(life => {
   let upgraded = life;
+  if(upgraded.occupation?.school?.roster)upgraded={...upgraded,occupation:{...upgraded.occupation,school:{...upgraded.occupation.school,roster:upgraded.occupation.school.roster.map(p=>({...p,...(p.clubs?{clubs:p.clubs.slice(0,1)}:{}),...(p.sports?{sports:p.sports.slice(0,1)}:{})}))}}};
   if (life.firstName === undefined) {
     const [firstName, ...rest] = life.name.trim().split(/\s+/);
     if (rest.length) upgraded = { ...upgraded, firstName, lastName: rest.join(' ') };

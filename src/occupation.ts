@@ -5,7 +5,7 @@ import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
 
 export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; activityDetails?:Record<string,import('./schoolCommitments').Membership>; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean}> };
-export type Job = { position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
+export type Job = { id?:string;hourlyWage?:number;weeklyHours?:number; position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
 export type Occupation = { highestEducation: 'None' | 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; school: School | null; job: Job | null; droppedOut?:boolean };
 export const university = (age: number): School => ({ name: 'Northbridge University', level: 'University', startAge: age, duration: 4, grades: 78, popularity: 64 });
 export const libraryJob = (age: number): Job => ({ position: 'Library assistant', employer: 'Riverside Library', salary: 32000, performance: 72, startAge: age, hours: 'Full time · 35 hours / week' });

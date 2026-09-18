@@ -11,7 +11,7 @@ test('only compliments, conversations and gifts have reaction meters; all valid 
   for(const action of availableActions(person,before)){
    const after=interact(before,person.id,action,action==='Gift'?'flowers':undefined);assert.notEqual(after,before);
    const result=interactionResult(before,after,person,action,action==='Gift'?'flowers':undefined);
-   assert.equal(Boolean(result.meter),['Compliment','Conversation','Gift','Suck up'].includes(action));assert.match(result.text,/^You/);assert.ok(result.text.includes(personAddress(person)) || action==='Ask for money');
+   assert.equal(Boolean(result.meter),['Compliment','Conversation','Gift','Suck up','Flirt'].includes(action));assert.match(result.text,/^You/);assert.ok(result.text.includes(personAddress(person)) || action==='Ask for money');
    if(action==='Conversation')assert.match(result.meter.label,/agreement/);if(action==='Gift' || action==='Compliment')assert.match(result.meter.label,/appreciation/);
   }
  }
