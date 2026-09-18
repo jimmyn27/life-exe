@@ -13,8 +13,7 @@ export const yearlyPartTimePay=(job:Job|null|undefined)=>job?.hourlyWage!==undef
 export type WorkAction='Hours'|'Raise'|'Resign'|'Work harder';
 export const jobEmoji=(id:string)=>({'babysitter':'🍼','pet-sitter':'🐾','grocery-bagger':'🛒','ice-cream-counter':'🍦','food-counter':'🍔','library-aide':'📚','retail-assistant':'🛍️',cashier:'💳',barista:'☕','office-aide':'📎','movie-theater':'🎬','hotel-reception':'🏨','warehouse-assistant':'📦'} as Record<string,string>)[id]??'💼';
 export const projectedJobHours=(life:Life,newHours:number)=>{const job=getOccupation(life).job;const oldHours=job?job.weeklyHours??Number(job.hours.match(/(\d+)\s*hours/i)?.[1]??40):0;return scheduleHours(life)-oldHours+newHours;};
-export type JobSort={key:'name'|'wage'|'hours';ascending:boolean};
-export const sortedPartTimeOffers=(life:Life,sort:JobSort,query='')=>partTimeOffers(life).filter(j=>j.title.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>{const diff=sort.key==='name'?a.title.localeCompare(b.title):sort.key==='wage'?a.hourlyWage-b.hourlyWage:a.weeklyHours-b.weeklyHours;return (sort.ascending?diff:-diff)||a.title.localeCompare(b.title);});
+export const alphabeticalPartTimeOffers=(life:Life,query='')=>partTimeOffers(life).filter(j=>j.title.toLowerCase().includes(query.toLowerCase())).sort((a,b)=>a.title.localeCompare(b.title));
 export const workRequestChance=(years:number,performance:number)=>Math.min(.9,.15+Math.max(0,years)*.05+performance*.005);
 export function workAction(life:Life,action:WorkAction):{life:Life;text:string}{
  const occupation=getOccupation(life),job=occupation.job;const reject=(text:string)=>({life,text});

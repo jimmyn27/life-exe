@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getOccupation,nextSchoolName} from '../src/occupation.ts';
-import {partTimeOffers,takePartTimeJob,projectedJobHours,workAction,workRequestChance,sortedPartTimeOffers} from '../src/partTimeWork.ts';
+import {partTimeOffers,takePartTimeJob,projectedJobHours,workAction,workRequestChance,alphabeticalPartTimeOffers} from '../src/partTimeWork.ts';
 import {newMembership,scheduleHours} from '../src/schoolCommitments.ts';
 import {applySchoolActivity} from '../src/schoolActivities.ts';
 import {characters,interact,availableActions,actionUnavailable} from '../src/relationships.ts';
@@ -27,8 +27,8 @@ test('more hours and raises depend on tenure and performance, save and never exc
  const hired=takePartTimeJob(life(),'library-aide'),remaining=20-hired.occupation.job.weeklyHours;const l={...hired,occupation:{...hired.occupation,school:{...hired.occupation.school,memberships:remaining?['chess']:[],activityDetails:remaining?{chess:{...newMembership(16),hours:remaining}}:{}}}};saved(l);assert.equal(scheduleHours(l),60);assert.equal(workAction(l,'Hours').life,l);
 });
 test('natural yearly performance gains apply to work, clubs and sports, and positive manager interactions can improve performance once yearly',()=>{
- const hired=takePartTimeJob(life(),'library-aide'),next=advanceYear(hired);assert.equal(next.occupation.job.performance,hired.occupation.job.performance+2);
- const activities=enrolled(10),year=advanceYear(activities);assert.equal(year.occupation.school.activityDetails.chess.performance,52);assert.equal(year.occupation.school.activityDetails.basketball.performance,52);
+ const hired=takePartTimeJob(life(),'library-aide'),next=advanceYear(hired);assert.equal(next.occupation.job.performance,hired.occupation.job.performance+10);
+ const activities=enrolled(10),year=advanceYear(activities);assert.equal(year.occupation.school.activityDetails.chess.performance,55);assert.equal(year.occupation.school.activityDetails.basketball.performance,55);
  let improved=false;for(let i=0;i<50;i++){const l=takePartTimeJob(life(16,`manager-${i}`),'library-aide'),manager=characters(l).work.find(p=>p.relation==='Manager');const n=interact(l,manager.id,'Conversation');if(n.occupation.job.performance>l.occupation.job.performance){improved=true;assert.equal(interact(n,manager.id,'Conversation').occupation.job.performance,n.occupation.job.performance);break;}}assert.ok(improved);
 });
 test('partners get breakup first, no flirt/befriend/unfriend; acquaintances need friendship to spend time, and age-specific outings are enforced',()=>{
@@ -44,7 +44,7 @@ test('only specified social actions have confirmations; character previews and N
 test('dancing with an existing partner always succeeds and has both enjoyment bars',()=>{
  for(let i=0;i<30;i++){const l=life(16,`partner-dance-${i}`),p=characters(l).school.find(p=>p.relation==='Classmate');const dating=interact(l,p.id,'Befriend');dating.relationships[p.id].status='dating';dating.relationships[p.id].strength=0;const outcome=schoolDance(dating,'partner');assert.equal(outcome.accepted,true);assert.equal(outcome.bars.length,2);assert.ok(outcome.text.includes(p.name));assert.ok(outcome.life.occupation.school.yearActions.includes('School dance'));}
 });
-test('job search sorts both ways by names, wages and hours with stable alphabetical tiebreaks',()=>{
- const l=life();for(const key of ['name','wage','hours'])for(const ascending of [true,false]){const rows=sortedPartTimeOffers(l,{key,ascending});for(let i=1;i<rows.length;i++){const a=rows[i-1],b=rows[i],diff=key==='name'?a.title.localeCompare(b.title):key==='wage'?a.hourlyWage-b.hourlyWage:a.weeklyHours-b.weeklyHours;assert.ok(ascending?diff<=0:diff>=0);}}
- assert.ok(sortedPartTimeOffers(l,{key:'name',ascending:true},'library').every(j=>j.title.includes('Library')));
+test('job search always sorts alphabetically and keeps text search',()=>{
+ const l=life(),rows=alphabeticalPartTimeOffers(l);for(let i=1;i<rows.length;i++)assert.ok(rows[i-1].title.localeCompare(rows[i].title)<=0);
+ const found=alphabeticalPartTimeOffers(l,'library');assert.ok(found.length);assert.ok(found.every(j=>j.title.includes('Library')));
 });

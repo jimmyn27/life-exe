@@ -10,7 +10,7 @@ import type { Life } from './saves';
 import type { Stats } from './data';
 import { getOccupation, schoolPopularity, occupationContacts, schoolName, type Contact } from './occupation.ts';
 
-export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Insult', 'Have fun', 'Hook up', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
+export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Have fun', 'Hook up', 'Insult', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
 export type RelationshipAction = typeof relationshipActions[number];
 export type RelationshipRecord = { strength: number; status: 'acquaintance' | 'friend' | 'dating' | 'unfriended'; stats: Stats; friendship?: boolean; profile?: {name:string;gender:string;ageOffset:number;education:string;occupation:string}; usedAge?: number; usedActions?: RelationshipAction[] };
 export type Person = Contact & { grades?:number;popularity?:number;extracurriculars?:string[];sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
@@ -72,6 +72,7 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const previous=life.relationships?.[id];
   const used=previous?.usedAge===life.age ? previous.usedActions??[] : [];
   const first=!used.includes(action);
+  const applyEffect=first || action==='Ask out';
   const wealth=familyMoney(life.family);
   const random=seededRandom(`${life.id}:${id}:money:${life.age}`);
   const given=action==='Ask for money' && random() < (person.strength/100)*(.35+wealth/155);
@@ -97,8 +98,8 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Break up'?(person.friendship?'friend':'acquaintance'):action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
-  const happiness = first && ['Have fun','Hook up','Make love'].includes(action)?accepted?Math.round((romance.yourEnjoyment-40)/10):-2:!first || action==='Ask for money' ? 0 : ['Break up','Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation','Suck up','Flirt'].includes(action) && response.delta<0 ? -3 : ['Ask out','Have fun'].includes(action) && !accepted ? -1 : 2;
-  const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(first?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
+  const happiness = first && ['Have fun','Hook up','Make love'].includes(action)?accepted?Math.round((romance.yourEnjoyment-40)/10):-2:!applyEffect || action==='Ask for money' ? 0 : ['Break up','Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation','Suck up','Flirt'].includes(action) && response.delta<0 ? -3 : ['Ask out','Have fun'].includes(action) && !accepted ? -1 : 2;
+  const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(applyEffect?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
   const occupation=getOccupation(life);
   const school=occupation.school;
   const staff=school?.roster?.some(p=>p.id===id && ['Teacher','Principal','Professor'].includes(p.relation));

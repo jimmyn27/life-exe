@@ -31,3 +31,13 @@ test('relationship state saves per character and restart preserves the saved sna
   assert.equal(restartLife(current).relationships,undefined); assert.equal(store.lives[0].relationships['maya-chen'].strength,current.relationships['maya-chen'].strength);
   const invalid=structuredClone(current); invalid.relationships['maya-chen'].stats.Health=101; assert.throws(() => parseStore(JSON.stringify(upsertLife(emptyStore(),invalid))));
 });
+
+test('asking out can be retried after rejection and relationship improvement in the same year',()=>{
+ const current=life(17),maya=characters(current).personal.find(p=>p.id==='maya-chen');
+ const initial={...current,relationships:{'maya-chen':{strength:60,status:'friend',stats:maya.stats}}};
+ const rejected=interact(initial,'maya-chen','Ask out');assert.equal(rejected.relationships['maya-chen'].strength,58);assert.equal(rejected.stats.Happiness,81);
+ const retry=interact(rejected,'maya-chen','Ask out');assert.equal(retry.relationships['maya-chen'].strength,56);assert.equal(retry.stats.Happiness,80);
+ const improved=interact(interact(retry,'maya-chen','Spend time'),'maya-chen','Gift');assert.equal(improved.relationships['maya-chen'].strength,67);
+ const accepted=interact(improved,'maya-chen','Ask out');assert.equal(accepted.relationships['maya-chen'].status,'dating');assert.equal(accepted.relationships['maya-chen'].strength,72);assert.equal(accepted.stats.Happiness,improved.stats.Happiness+2);
+ assert.deepEqual(parseStore(JSON.stringify(upsertLife(emptyStore(),accepted))).lives[0],accepted);
+});

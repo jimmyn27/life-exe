@@ -27,7 +27,7 @@ export function interactionResult(before:Life,after:Life,person:Person,action:Re
  const romance=romanceOutcome(before,person,action);
  const response=reaction(before,person,action,giftId);
  const change=(after.relationships?.[person.id]?.strength??person.strength)-person.strength;
- const repeated=before.relationships?.[person.id]?.usedAge===before.age && before.relationships[person.id].usedActions?.includes(action);
+ const repeated=action!=='Ask out' && before.relationships?.[person.id]?.usedAge===before.age && before.relationships[person.id].usedActions?.includes(action);
  const hasBar=['Compliment','Conversation','Gift','Suck up','Flirt'].includes(action);
  const pronoun=person.gender==='Female'?'Her':'His';
  const log=after.log.at(-1)?.text??'';
