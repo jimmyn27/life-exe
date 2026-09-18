@@ -1,3 +1,4 @@
+import { pairedParentAges } from './parentAges.ts';
 import type { Stats } from './data';
 export type Parent = { id: string; name: string; relation: 'Mother' | 'Father'; gender: 'Female' | 'Male'; ageAtBirth: number; education: string; occupation: string; stats: Stats; career?: number; rank?: number; yearsInPosition?: number };
 export type Sibling = { id: string; name: string; gender: 'Female' | 'Male'; birthAge: number; stats: Stats };
@@ -27,9 +28,13 @@ export function generateFamily(id: string, surname: string): Family {
  const integer=(a:number,b:number)=>a+Math.floor(random()*(b-a+1));
  const stats=():Stats=>({Health:integer(65,100),Happiness:integer(55,95),Smarts:integer(30,95),Looks:integer(30,95)});
  const single=random()<.18;
+ const motherCareer=integer(0,jobs.length-1);
+ const fatherCareer=single?undefined:integer(0,jobs.length-1);
+ const motherMinimum=jobs[motherCareer].education==='University'?23:18;
+ const ages=fatherCareer===undefined ? {mother:integer(motherMinimum,40),father:0} : pairedParentAges(random,motherMinimum,jobs[fatherCareer].education==='University'?23:18);
  const makeParent=(mother:boolean):Parent=>{
-  const career=integer(0,jobs.length-1), job=jobs[career];
-  const ageAtBirth=integer(job.education==='University'?23:18,mother?40:48);
+  const career=mother?motherCareer:fatherCareer!, job=jobs[career];
+  const ageAtBirth=mother?ages.mother:ages.father;
   const rank=Math.min(2,Math.floor((ageAtBirth-18)/10));
   return {id:mother?'parent-mother':'parent-father',name:`${(mother?['Elena','Grace','Nadia','Claire']:['Daniel','Marcus','Ethan','David'])[integer(0,3)]} ${mother && !single && random()>.85?'Reed':surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:job.education,occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
  };

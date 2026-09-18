@@ -59,3 +59,20 @@ File Explorer → Occupation → Education shows the current school, stage, grad
 
 
 Family simulation: births begin with a Command Prompt introduction and no popup. Family conversations and time together unlock at age 2; additional actions unlock at 6. Each parent can receive one money request per year, including refusals. Other actions affect stats once per action/person/year. Parent relationships and shared Money determine cash gifts. Five small parent career paths progress using years in position. Single mothers, older siblings and younger sibling births are supported; restarting restores the original family. Birth probabilities and the two-child family-size threshold are simplified gameplay settings, rather than demographic or medical predictions. Existing saves retain their family identities; newly created lives receive all randomized birth details.
+
+
+Parent age gaps now use a global-inspired, signed distribution rather than independent ages: father older 78%, same whole-year age 10%, mother older 12%. The expected father-minus-mother gap is 4.175 years (about 4.2). Common small gaps and rare larger gaps are defined in `src/parentAges.ts`. These exact weights are a gameplay approximation, not measured global percentages. The research includes both spouses and cohabiting partners, and does not establish this exact global histogram. Pew's 2019 report, using 2010–2018 census/survey data across 130 countries and territories, reports a global gap of about four years with male partners older on average; the 2022 research by Kramer et al. further examines partner gaps across 130 countries. Sources: https://www.pewresearch.org/religion/2019/12/12/household-patterns-by-age-and-gender/ and https://pubmed.ncbi.nlm.nih.gov/36165033/.
+
+| Parent age gap | Probability |
+| --- | --- |
+| Mother older by 6–10 years | 1% |
+| Mother older by 3–5 years | 4% |
+| Mother older by 1–2 years | 7% |
+| Same whole-year age | 10% |
+| Father older by 1–2 years | 18% |
+| Father older by 3–5 years | 27% |
+| Father older by 6–9 years | 20% |
+| Father older by 10–14 years | 11% |
+| Father older by 15–20 years | 2% |
+
+Within each range, integer gaps are equally likely. New couples draw their gap first, then a compatible maternal age (18–40, or at least 23 for the current university careers); paternal ages remain 18–60, or at least 23 for university careers. Conditional age sampling preserves the selected gap without clipping or rerolling it. Single mothers retain independent maternal age generation. Existing parents and saved lives keep their original ages; this applies to newly created lives. Global calibration was explicitly requested despite the US-only game setting.
