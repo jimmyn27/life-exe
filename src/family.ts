@@ -49,7 +49,7 @@ export function resetFamily(family: Family): Family {
 export function birthIntroduction(name:string, city:string, family?:Family):string {
  if(!family) return `My name is ${name}. I was born in ${city}.`;
  return [`I was born a ${(family.gender??'Female').toLowerCase()} in ${city}, United States. ${family.planned===false?'My arrival was an unexpected pregnancy.':family.parents.length===1?'My mother had planned for my arrival.':'My parents had planned for my arrival.'}`,
- `My name is ${name}.`,...([...family.parents].reverse().map(p=>`My ${p.relation.toLowerCase()} is ${p.name}, a ${p.occupation.toLowerCase()} (age ${p.ageAtBirth}).`)),...(family.parents.length===1?['I was born to a single mother.']:[])].join('\n');
+ `My name is ${name}.`,...([...family.parents].reverse().map(p=>`My ${p.relation.toLowerCase()} is ${p.name}, a ${p.occupation.toLowerCase()} (age ${p.ageAtBirth}).`)),...(family.parents.length===1?['I was born to a single mother.']:[]),...(family.siblings??[]).filter(sibling=>sibling.birthAge<0).map(sibling=>`I have an older ${sibling.gender==='Male'?'brother':'sister'} named ${sibling.name.split(' ')[0]} (age ${-sibling.birthAge}).`)].join('\n');
 }
 export function advanceFamily(family: Family | undefined,id:string,age:number,surname:string): {family:Family|undefined; newborn?:Sibling} {
  if(!family) return {family};
