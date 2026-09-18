@@ -1,0 +1,17 @@
+import { Icon } from './ClassicUI';
+import { getOccupation, schoolYear } from './occupation';
+import type { Life } from './saves';
+import { money } from './money';
+
+function Meter({ name, value }: { name: string; value: number }) {
+  return <div className="occupation-meter"><div><span>{name}</span><strong>{value}%</strong></div><div className="relationship-meter" role="progressbar" aria-label={name} aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${value}%`}}/></div></div>;
+}
+export function JobDetails({ life }: { life: Life }) {
+  const job = getOccupation(life).job;
+  return <><div className="directory-heading"><Icon kind="folder"/><div><h2>Job</h2><p>Your current employment.</p></div></div>{job ? <><fieldset className="occupation-details"><legend>Current position</legend><dl><div><dt>Position</dt><dd>{job.position}</dd></div><div><dt>Employer</dt><dd>{job.employer}</dd></div><div><dt>Annual salary</dt><dd>{money(job.salary)} USD</dd></div><div><dt>Schedule</dt><dd>{job.hours}</dd></div><div><dt>Years in position</dt><dd>{life.age - job.startAge}</dd></div><div><dt>Started</dt><dd>Age {job.startAge}</dd></div></dl></fieldset><fieldset className="occupation-details"><legend>At work</legend><Meter name="Job performance" value={job.performance}/></fieldset></> : <div className="empty-folder"><Icon kind="folder"/><strong>You are not currently employed.</strong><p>Accepted job offers will appear here.</p></div>}</>;
+}
+export function EducationDetails({ life }: { life: Life }) {
+  const { school, highestEducation } = getOccupation(life);
+  return <><div className="directory-heading"><Icon kind="document"/><div><h2>Education</h2><p>Your schooling and qualifications.</p></div></div><fieldset className="occupation-details"><legend>Qualifications</legend><dl><div><dt>Highest education</dt><dd>{highestEducation === 'None' ? 'No completed schooling yet' : highestEducation}</dd></div></dl></fieldset>{school ? <><fieldset className="occupation-details"><legend>Current school</legend><dl><div><dt>School</dt><dd>{school.name}</dd></div><div><dt>Level</dt><dd>{school.level}</dd></div><div><dt>School year</dt><dd>Year {schoolYear(life, school)} of {school.duration}</dd></div><div><dt>Enrolled</dt><dd>Age {school.startAge}</dd></div></dl></fieldset><fieldset className="occupation-details"><legend>School life</legend><Meter name="Grades" value={school.grades}/><Meter name="Popularity" value={school.popularity}/></fieldset></> : <div className="empty-folder"><Icon kind="document"/><strong>{life.age < 6 ? 'School has not started yet.' : 'You are not currently in school.'}</strong><p>{life.age < 6 ? 'Your first school year begins at age 6.' : 'Your completed education remains listed above.'}</p></div>}</>;
+}
+

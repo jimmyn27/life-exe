@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+
+.pnpm-store/
+.tmp/
+.env
+.env.*
+!.env.example
+*.log
