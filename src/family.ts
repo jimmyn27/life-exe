@@ -1,3 +1,4 @@
+import { olderSiblingAges } from './siblingAges.ts';
 import { pairedParentAges } from './parentAges.ts';
 import type { Stats } from './data';
 export type Parent = { id: string; name: string; relation: 'Mother' | 'Father'; gender: 'Female' | 'Male'; ageAtBirth: number; education: string; occupation: string; stats: Stats; career?: number; rank?: number; yearsInPosition?: number };
@@ -41,9 +42,8 @@ export function generateFamily(id: string, surname: string): Family {
  const parents=[makeParent(true),...(!single?[makeParent(false)]:[])];
  const inherit=(key:'Smarts'|'Looks')=>clamp(Math.round(parents.reduce((sum,p)=>sum+p.stats[key],0)/parents.length)+integer(-8,8));
  const siblings:Sibling[]=[];
- const maxAge=Math.min(10,...parents.map(p=>p.ageAtBirth-18));
- const count=maxAge>0?(random()<.45?integer(1,random()<.2?3:2):0):0;
- for(let i=0;i<count;i++) siblings.push({id:`sibling-older-${i}`,name:`${names[i]} ${surname}`,gender:random()<.5?'Female':'Male',birthAge:-integer(1,maxAge),stats:stats()});
+ const olderAges=olderSiblingAges(random,parents[0].ageAtBirth,parents[1]?.ageAtBirth);
+ for(let i=0;i<olderAges.length;i++) siblings.push({id:`sibling-older-${i}`,name:`${names[i]} ${surname}`,gender:random()<.5?'Female':'Male',birthAge:-olderAges[i],stats:stats()});
  const income=parents.reduce((sum,p)=>sum+jobs[p.career!].salary*(1+p.rank!*.4),0);
  const money=clamp(Math.round(10+income/5000+parents.reduce((sum,p)=>sum+p.ageAtBirth-18,0)/3+integer(-8,12)+(random()<.12?25:0)));
  return {parents,siblings,money,gender:random()<.5?'Female':'Male',planned:random()<.65,birthStats:{Health:integer(85,100),Happiness:integer(70,95),Smarts:inherit('Smarts'),Looks:inherit('Looks')},origin:structuredClone({parents,money,siblings})};
@@ -56,16 +56,16 @@ export function birthIntroduction(name:string, city:string, family?:Family):stri
  return [`I was born a ${(family.gender??'Female').toLowerCase()} in ${city}, United States. ${family.planned===false?'My arrival was an unexpected pregnancy.':family.parents.length===1?'My mother had planned for my arrival.':'My parents had planned for my arrival.'}`,
  `My name is ${name}.`,...([...family.parents].reverse().map(p=>`My ${p.relation.toLowerCase()} is ${p.name}, a ${p.occupation.toLowerCase()} (age ${p.ageAtBirth}).`)),...(family.parents.length===1?['I was born to a single mother.']:[]),...(family.siblings??[]).filter(sibling=>sibling.birthAge<0).map(sibling=>`I have an older ${sibling.gender==='Male'?'brother':'sister'} named ${sibling.name.split(' ')[0]} (age ${-sibling.birthAge}).`)].join('\n');
 }
-export function advanceFamily(family: Family | undefined,id:string,age:number,surname:string): {family:Family|undefined; newborn?:Sibling} {
- if(!family) return {family};
+export function advanceFamily(family: Family | undefined,id:string,age:number,surname:string): {family:Family|undefined; newborn?:Sibling; promotions:Parent[]} {
+ if(!family) return {family,promotions:[]};
  const random=seededRandom(`${id}:family-year:${age}`);
  const origin=family.origin??structuredClone({parents:family.parents,money:familyMoney(family),siblings:family.siblings??[]});
- let promoted=0;
+ const promotions:Parent[]=[];
  const parents=family.parents.map(p=>{
   const years=(p.yearsInPosition??0)+1;
   const job=p.career===undefined?undefined:jobs[p.career];
   const rank=p.rank??0;
-  if(job && rank<2 && random()<promotionChance(years)){promoted++;return {...p,rank:rank+1,occupation:job.titles[rank+1],yearsInPosition:0};}
+  if(job && rank<2 && random()<promotionChance(years)){const parent={...p,rank:rank+1,occupation:job.titles[rank+1],yearsInPosition:0};promotions.push(parent);return parent;}
   return {...p,yearsInPosition:years};
  });
  const siblings=[...(family.siblings??[])];
@@ -76,6 +76,6 @@ export function advanceFamily(family: Family | undefined,id:string,age:number,su
   newborn={id:`sibling-born-${age}`,name:`${names[index%names.length]}${index>=names.length?' '+(index+1):''} ${surname}`,gender:random()<.5?'Female':'Male',birthAge:age,stats:{Health:90,Happiness:80,Smarts:family.birthStats.Smarts,Looks:family.birthStats.Looks}};
   siblings.push(newborn);
  }
- const growth=.2+parents.reduce((sum,p)=>sum+(p.rank??0)*.15,0)+promoted*.8;
- return {family:{...family,parents,siblings,origin,money:clamp(familyMoney(family)+growth)},newborn};
+ const growth=.2+parents.reduce((sum,p)=>sum+(p.rank??0)*.15,0)+promotions.length*.8;
+ return {family:{...family,parents,siblings,origin,money:clamp(familyMoney(family)+growth)},newborn,promotions};
 }
