@@ -1,3 +1,5 @@
+import {manageSchoolActivity} from './schoolActivities';
+import type {MembershipAction} from './schoolCommitments';
 import SchoolDancePanel from './SchoolDancePanel';
 import {schoolDance,type DanceOutcome,type DanceMode} from './schoolDance';
 import { playSystemSound } from './sounds';
@@ -161,6 +163,7 @@ export default function App() {
       openWindow('Command');
       return;
     }
+    if(choice.membershipAction){setEvent(null);finishMembershipAction(choice.membershipAction.id,choice.membershipAction.action);return;}
     if(choice.schoolAction){setEvent(null);finishSchoolAction(choice.schoolAction);return;}
     if (choice.relationship) {
       const { id, action, giftId } = choice.relationship;
@@ -190,9 +193,16 @@ export default function App() {
     finishSchoolAction(action);
   }
   function finishSchoolAction(action:SchoolAction) {
-    const next=schoolAction(life,action);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text.replace(/^I /,'You ').replace(/My /g,'Your ')??'');}
-    else setNotice(action==='Study harder'?'You studied harder again. Your grades and smarts already received the benefit of studying this year.':'You already did this school action this year.');
+    const next=schoolAction(life,action);if(next!==life){setLife(next);setDirty(true);}
+    if(action==='Study harder'){const messages=['You studied until the library closed.','You reviewed your notes until late in the evening.','You spent the afternoon working through difficult questions.','You studied until your pencil needed sharpening again.','You made flashcards and reviewed them after dinner.'];setNotice(messages[Math.floor(Math.random()*messages.length)]);}
+    else setNotice(next!==life?next.log.at(-1)?.text.replace(/^I /,'You ').replace(/My /g,'Your ')??'':'You already did this school action this year.');
   }
+  function membershipAction(id:string,action:MembershipAction,hours?:number) {
+    if(action==='Hours'){const next=manageSchoolActivity(life,id,action,hours);if(next!==life){setLife(next);setDirty(true);}return;}
+    if(action==='Quit'){setEventSource({kind:'activity'});setEvent({category:'School activity',title:'Leave this activity?',text:'Leave your club or sports team? Your performance and membership will be removed.',choices:[{label:'Quit',hint:'Leave this activity.',outcome:'',membershipAction:{id,action}},{label:'Cancel',hint:'Keep your membership.',outcome:''}]});return;}
+    finishMembershipAction(id,action);
+  }
+  function finishMembershipAction(id:string,action:MembershipAction) {const next=manageSchoolActivity(life,id,action);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text.replace(/^I /,'You ')??'');}else setNotice('You put in more effort, but you already received the performance benefit this year.');}
   function resolveDance(mode:DanceMode,id?:string) {const outcome=schoolDance(life,mode,id);if(outcome.life!==life){setLife(outcome.life);setDirty(true);}setDanceOutcome(outcome);}
   function relationshipAction(id: string, action: RelationshipAction) {
     const groups = characters(life); const person = [...groups.personal, ...groups.work, ...groups.school].find(item => item.id === id);
@@ -213,7 +223,7 @@ export default function App() {
       <div className="desktop-workspace" ref={workspaceRef}>
         <DesktopIcons onOpenLife={openMyLife}/>
         {windows && windowIds.filter(id => windows[id].status !== 'closed').map(id => <FloatingWindow key={`${life.id}:${id}`} id={id} title={titles[id]} icon={icons[id]} state={windows[id]} bounds={bounds} active={activeId === id} className={`program-window program-${id.toLowerCase()}`} onFocus={() => focusWindow(id)} onChange={rect => setRect(id, rect)} onMinimize={() => minimize(id)} onMaximize={() => toggleMaximize(id)} onClose={() => closeWindow(id)}>
-          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
+          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onMembership={membershipAction} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
         </FloatingWindow>)}
         <div className="age-up-dock"><span className="age-dock-label">YOUR NEXT CHAPTER</span><button className="classic-button desktop-age-up" disabled={ageBlocked} onClick={ageUp}><span className="age-dock-icon" aria-hidden="true">↑</span><span><strong>Age Up</strong><small>{life.pendingEvent ? "Life event needs a decision" : `Begin age ${life.age + 1}`}</small></span><span className="age-dock-arrow" aria-hidden="true">→</span></button>{life.pendingEvent && !event && <button className="classic-button resume-life-event" onClick={resumeEvent}>Review life event…</button>}</div>
       </div>

@@ -1,3 +1,4 @@
+import {advanceCommitments} from './schoolCommitments.ts';
 import { advanceFamily } from './family.ts';
 import type { Life } from './saves';
 import type { LifeEvent } from './data';
@@ -27,7 +28,8 @@ export function advanceYear(life: Life, deliverMail = false): Life {
   ] } : eventForAge(getOccupation(life).droppedOut?Math.max(age,18):age);
   const growth=advanceFamily(life.family,life.id,age,life.lastName??life.name.split(' ').slice(1).join(' '));
   const birth:LifeEvent|undefined=growth.newborn?{category:'Family',title:'A new sibling!',text:`Your mother gave birth to ${growth.newborn.name}, your new ${growth.newborn.gender==='Male'?'brother':'sister'}.`,choices:[{label:'Welcome to the family',hint:'Meet your new sibling.',outcome:`My ${growth.newborn.gender==='Male'?'brother':'sister'} ${growth.newborn.name} was born.`}]}:undefined;
-  return { ...life, ...(growth.family?{family:growth.family}:{}), age, log:[...life.log,...growth.promotions.map(parent=>({age,tag:'LIFE',text:`My ${parent.relation.toLowerCase()} has been promoted to ${parent.occupation}.`}))], occupation: advanceOccupation(life, age), pendingEvent: birth ? {age,event:birth,queue:[event]} : { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
+  const next:Life={ ...life, ...(growth.family?{family:growth.family}:{}), age, log:[...life.log,...growth.promotions.map(parent=>({age,tag:'LIFE',text:`My ${parent.relation.toLowerCase()} has been promoted to ${parent.occupation}.`}))], occupation: advanceOccupation(life, age), pendingEvent: birth ? {age,event:birth,queue:[event]} : { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
+  return advanceCommitments(life,next);
 }
 export function answerLifeEvent(life: Life, decision: number): Life {
   const pending = life.pendingEvent;

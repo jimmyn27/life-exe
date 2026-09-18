@@ -521,3 +521,22 @@
 .school-activity-group > summary{cursor:pointer;font-size:15px;color:#265d99;padding:12px 0;border-bottom:1px solid #d2deec}
 .school-activity-emoji{font-size:27px;flex:0 0 32px;text-align:center}
 #dance-classmate{display:block;width:100%;margin:8px 0 15px;padding:5px}
+
+.school-actions{justify-content:center}
+.contact-meter-label{font-size:11px;color:#53779d;margin:10px 0 5px}
+.contact-list-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.contact-list-heading strong{font-size:10px;flex:0 0 100px;text-align:right}
+.classmate-school-stats{margin-top:12px;display:grid;gap:9px}
+.school-memberships{display:grid;gap:12px;margin:15px 0}
+.membership-card{background:#f8fbff;border:1px solid #d2deec;padding:12px}
+.membership-card h3{font-size:13px;margin:0 0 8px}
+.membership-card dl{margin:0 0 10px}
+.membership-card dl > div{display:flex;justify-content:space-between;font-size:11px;padding:4px 0}
+.membership-card dd{margin:0;font-weight:bold}
+.membership-performance strong{display:block;font-size:11px;margin-bottom:5px}
+.membership-hours{display:block;font-size:11px;margin:10px 0}
+.membership-hours input{display:block;width:100%;margin-top:7px}
+.membership-actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.web-page-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.home-schedule{width:170px;flex:0 0 170px}
+.home-schedule small{font-size:10px;color:#6a7f98;display:block;text-align:right;margin-top:5px}

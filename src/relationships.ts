@@ -1,3 +1,4 @@
+import {npcBaseStats,classmatePopularity} from './npcSchool.ts';
 import {npcSexuality} from './preferences.ts';
 import { personAddress } from './personAddress.ts';
 import { reaction } from './interactionResults.ts';
@@ -10,7 +11,7 @@ import { getOccupation, schoolPopularity, occupationContacts, schoolName, type C
 export const relationshipActions = ['Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Gift', 'Insult', 'Hook up', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
 export type RelationshipAction = typeof relationshipActions[number];
 export type RelationshipRecord = { strength: number; status: 'acquaintance' | 'friend' | 'dating' | 'unfriended'; stats: Stats; friendship?: boolean; profile?: {name:string;gender:string;ageOffset:number;education:string;occupation:string}; usedAge?: number; usedActions?: RelationshipAction[] };
-export type Person = Contact & { sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
+export type Person = Contact & { grades?:number;popularity?:number;sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
 export function characters(life: Life): { personal: Person[]; work: Person[]; school: Person[] } {
   const occupation = getOccupation(life);
   const contextual = occupationContacts(life);
@@ -28,12 +29,12 @@ export function characters(life: Life): { personal: Person[]; work: Person[]; sc
     const parent = contact.relation === 'Mother' || contact.relation === 'Father';
     const staff = ['Teacher','Professor','Principal','Manager'].includes(contact.relation);
     const age = sibling ? life.age-sibling.birthAge : life.age + (contact.ageOffset ?? familyParent?.ageAtBirth ?? (contact.relation === 'Mother' ? 28 : contact.relation === 'Father' ? 31 : staff ? 25 : setting === 'work' ? 3 : 0));
-    const seed = [...id].reduce((total, char) => total + char.charCodeAt(0),0);
-    const stats: Stats = {Health:75+seed%21,Happiness:65+seed%30,Smarts:60+seed%36,Looks:55+seed%40};
+    const stats:Stats=npcBaseStats(id);
     const record = life.relationships?.[id];
     const education = parent ? contact.relation === 'Mother' ? 'University' : 'Secondary school' : staff ? 'University' : age >= 18 ? 'Secondary school' : age>=14?'Middle school':age >= 10 ? 'Primary school' : 'No completed schooling yet';
     const job = parent ? contact.relation === 'Mother' ? 'Nurse' : 'Electrician' : setting === 'work' ? `${contact.relation === 'Coworker' ? 'Library assistant' : contact.relation} · ${occupation.job?.employer}` : setting === 'school' ? `${contact.relation === 'Classmate' ? 'Student' : contact.relation} · ${occupation.school ? schoolName(life,occupation.school) : ''}` : life.age < 18 ? 'Student' : 'Barista';
-    return {...contact,id,sexuality:npcSexuality(life.id,id),parent,friendship:record?.friendship ?? (record?.status==='friend' || contact.group==='Friends'),family:parent || Boolean(sibling),age,education:sibling ? age>=18?'Secondary school':age>=14?'Middle school':age>=10?'Primary school':'No completed schooling yet' : familyParent?.education ?? (setting==='personal' && record?.profile && record.profile.ageOffset>10 ? record.profile.education : education),occupation:sibling ? age>=18?'Not employed':age>=6?'Student':'Not in school' : familyParent?.occupation ?? (setting==='personal' && record?.profile ? record.profile.ageOffset>0?record.profile.occupation:age<18?'Student':'Not employed' : contact.subject ? `${contact.subject} ${contact.relation.toLowerCase()} · ${occupation.school?schoolName(life,occupation.school):''}` : job),gender:contact.gender ?? sibling?.gender ?? familyParent?.gender ?? (contact.relation === 'Father' || ['Noah Reed','Oliver Patel'].includes(contact.name) ? 'Male' : 'Female'),stats:record?.stats ?? sibling?.stats ?? familyParent?.stats ?? stats,strength:record?.strength ?? contact.strength,status:record?.status ?? (contact.group==='Family' || contact.group==='Friends'?'friend':'acquaintance')};
+    const student=contextual.school.find(p=>p.id===id && p.relation==='Classmate') as import('./schoolCommunity').SchoolPerson|undefined;
+    return {...contact,id,...(student?{grades:student.grades??(record?.stats??stats).Smarts,popularity:classmatePopularity(student,(record?.stats??stats).Looks)}:{}),sexuality:npcSexuality(life.id,id),parent,friendship:record?.friendship ?? (record?.status==='friend' || contact.group==='Friends'),family:parent || Boolean(sibling),age,education:sibling ? age>=18?'Secondary school':age>=14?'Middle school':age>=10?'Primary school':'No completed schooling yet' : familyParent?.education ?? (setting==='personal' && record?.profile && record.profile.ageOffset>10 ? record.profile.education : education),occupation:sibling ? age>=18?'Not employed':age>=6?'Student':'Not in school' : familyParent?.occupation ?? (setting==='personal' && record?.profile ? record.profile.ageOffset>0?record.profile.occupation:age<18?'Student':'Not employed' : contact.subject ? `${contact.subject} ${contact.relation.toLowerCase()} · ${occupation.school?schoolName(life,occupation.school):''}` : job),gender:contact.gender ?? sibling?.gender ?? familyParent?.gender ?? (contact.relation === 'Father' || ['Noah Reed','Oliver Patel'].includes(contact.name) ? 'Male' : 'Female'),stats:record?.stats ?? sibling?.stats ?? familyParent?.stats ?? stats,strength:record?.strength ?? contact.strength,status:record?.status ?? (contact.group==='Family' || contact.group==='Friends'?'friend':'acquaintance')};
   }
   return {personal:personal.map(contact => profile(contact,'personal')).filter(person => person.parent || person.status !== 'unfriended'),work:contextual.work.map(contact => profile(contact,'work')),school:contextual.school.map(contact => profile(contact,'school'))};
 }
@@ -91,6 +92,9 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const staff=school?.roster?.some(p=>p.id===id && ['Teacher','Principal','Professor'].includes(p.relation));
   const gradeGain=first && staff && ['Compliment','Conversation','Suck up'].includes(action)?Math.max(0,Math.ceil(response.delta/2)):0;
   const next:Life={...life,...(school?{occupation:{...occupation,school:{...school,grades:Math.min(100,school.grades+gradeGain)}}}:{}),balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action].split(person.name).join(personAddress(person,'first'))}]};
+  if(first && staff && action==='Suck up'){
+    for(const classmate of groups.school.filter(p=>p.relation==='Classmate')){const existing=next.relationships?.[classmate.id];next.relationships![classmate.id]={...existing,strength:Math.max(0,classmate.strength-1),status:classmate.status,friendship:classmate.friendship,stats:{...classmate.stats}};}
+  }
   if(next.occupation?.school)next.occupation.school.popularity=schoolPopularity(next,next.occupation.school);
   return next;
 }

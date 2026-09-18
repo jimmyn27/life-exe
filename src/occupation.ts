@@ -1,8 +1,9 @@
+import {advanceClassmate} from './npcSchool.ts';
 import {advanceSchoolRoster,initialSchoolRoster,type SchoolPerson} from './schoolCommunity.ts';
 import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
 
-export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean}> };
+export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; activityDetails?:Record<string,import('./schoolCommitments').Membership>; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean}> };
 export type Job = { position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
 export type Occupation = { highestEducation: 'None' | 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; school: School | null; job: Job | null; droppedOut?:boolean };
 export const university = (age: number): School => ({ name: 'Northbridge University', level: 'University', startAge: age, duration: 4, grades: 78, popularity: 64 });
@@ -18,7 +19,7 @@ export function getOccupation(life: Life): Occupation {
     if(saved.school && saved.school.level!=='University' && life.age>=6 && life.age<18){
       const level=life.age<10?'Primary school':life.age<14?'Middle school':'Secondary school';
       const changed=saved.school.level!==level;
-      return withPopularity(life,{...saved,highestEducation:life.age<10?'None':life.age<14?'Primary school':'Middle school',school:{...saved.school,level,startAge:life.age<10?6:life.age<14?10:14,duration:4,roster:changed?initialSchoolRoster(life.id,life.age):saved.school.roster??initialSchoolRoster(life.id,life.age),...(changed?{name:life.age<10?'Maplewood Elementary School':life.age<14?'Brookfield Middle School':'Brookfield High School',grades:initialGrades(life),memberships:[],activityAttempts:{}}:{})}});
+      return withPopularity(life,{...saved,highestEducation:life.age<10?'None':life.age<14?'Primary school':'Middle school',school:{...saved.school,level,startAge:life.age<10?6:life.age<14?10:14,duration:4,roster:changed?initialSchoolRoster(life.id,life.age):saved.school.roster??initialSchoolRoster(life.id,life.age),...(changed?{name:life.age<10?'Maplewood Elementary School':life.age<14?'Brookfield Middle School':'Brookfield High School',grades:initialGrades(life),memberships:[],activityDetails:{},activityAttempts:{}}:{})}});
     }
     return withPopularity(life,{...saved,school:saved.school?{...saved.school,roster:saved.school.roster??initialSchoolRoster(life.id,life.age)}:null});
   }
@@ -76,7 +77,7 @@ export function schoolAction(life: Life, requested: SchoolAction): Life {
  if(action==='Change schools'){
   const parents=life.family?.parents??[];const relationship=parents.length?parents.reduce((sum,p)=>sum+(life.relationships?.[p.id]?.strength??(p.relation==='Mother'?86:79)),0)/parents.length:70;
   const allowed=random()<Math.min(.95,.1+relationship/150+familyMoney(life.family)/400);
-  if(allowed){const serial=(school.transfers??0)+1;nextSchool.transfers=serial;const names=['Pinecrest','Riverside','Oakridge','Cedar Grove'];nextSchool.name=`${names[(serial-1)%names.length]} ${schoolStage(life,school)}`;nextSchool.roster=initialSchoolRoster(`${life.id}:transfer:${serial}`,life.age).map(p=>({...p,id:`transfer-${serial}-${p.id}`}));nextSchool.memberships=[];nextSchool.activityAttempts={};text=`My parents agreed to change schools. I enrolled at ${nextSchool.name}.`;}
+  if(allowed){const serial=(school.transfers??0)+1;nextSchool.transfers=serial;const names=['Pinecrest','Riverside','Oakridge','Cedar Grove'];nextSchool.name=`${names[(serial-1)%names.length]} ${schoolStage(life,school)}`;nextSchool.roster=initialSchoolRoster(`${life.id}:transfer:${serial}`,life.age).map(p=>advanceClassmate({...p,id:`transfer-${serial}-${p.id}`,gradeAge:undefined},life.id,life.age,true));nextSchool.memberships=[];nextSchool.activityDetails={};nextSchool.activityAttempts={};text=`My parents agreed to change schools. I enrolled at ${nextSchool.name}.`;}
   else text='My parents declined my request to change schools.';
  }
  if(nextOccupation.school)nextOccupation.school.popularity=schoolPopularity(life,nextOccupation.school);

@@ -1,6 +1,7 @@
+import {advanceClassmate} from './npcSchool.ts';
 import {seededRandom} from './family.ts';
 import {namePool,givenNamesForGender} from './catalogs/us/lifeContent.ts';
-export type SchoolPerson={id:string;name:string;gender:'Male'|'Female';ageOffset:number;relation:'Classmate'|'Teacher'|'Principal'|'Professor';group:string;strength:number;subject?:string};
+export type SchoolPerson={id:string;name:string;gender:'Male'|'Female';ageOffset:number;relation:'Classmate'|'Teacher'|'Principal'|'Professor';group:string;strength:number;subject?:string;grades?:number;gradeAge?:number;clubs?:string[];sports?:string[]};
 export const schoolStageId=(age:number)=>age<10?'primary':age<14?'middle':age<18?'secondary':'university';
 export const classroomSize=(age:number)=>age<10?22:age<14?24:25;
 export function advanceSchoolRoster(id:string,age:number,previous:readonly SchoolPerson[]=[]):SchoolPerson[]{
@@ -28,7 +29,7 @@ export function advanceSchoolRoster(id:string,age:number,previous:readonly Schoo
  peers=peers.slice(0,count);
  const subjects=stage==='primary'?['Classroom','Art','Physical education']:['English','Mathematics','Science','History','Art','Physical education'];
  const staff=staffChanged?[make(0,'Principal'),...subjects.map((subject,index)=>make(index+1,stage==='university'?'Professor':'Teacher',subject))]:previous.filter(person=>person.relation!=='Classmate');
- return [...peers,...staff];
+ return [...peers.map(person=>advanceClassmate(person,id,age,transition)),...staff];
 }
 export function initialSchoolRoster(id:string,age:number):SchoolPerson[]{
  let roster:SchoolPerson[]=[];
