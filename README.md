@@ -23,7 +23,7 @@ A Windows XP Luna inspired desktop for a text-based life simulator, with the Bli
 - Local character saves, character switching, and a new character dialog.
 - Layouts for desktop and smaller screens.
 
-The initial preview character begins at age 18; new characters begin at age 0 with separate first and last name fields, saved separately. Older full names are split on load when possible. Age Up commits the new age, date, school progression, and job tenure before showing decisions for the beginning of that age. Lookout is removed from the current UI and no new mail is delivered; existing mail and occupation data remain in saves and old mail does not block progression. This remains a UI prototype with sample contacts and fixed starter grades, popularity, and job performance. Applications, salary payments, and promotions will come later. School years and years in position advance with age; primary starts at 6, secondary at 12, and secondary graduation is at 18. Occupation records save per character and reset on restart. Wallpaper source information is in `public/ASSETS.md`.
+The game opens on the character selection screen with no demo character; new characters begin at age 0 with separate first and last name fields, saved separately. Older full names are split on load when possible. Age Up commits the new age, date, school progression, and job tenure before showing decisions for the beginning of that age. Lookout is removed from the current UI and no new mail is delivered; existing mail and occupation data remain in saves and old mail does not block progression. This remains a UI prototype with sample contacts and fixed starter grades, popularity, and job performance. Applications, salary payments, and promotions will come later. School years and years in position advance with age; primary starts at 6, secondary at 12, and secondary graduation is at 18. Occupation records save per character and reset on restart. Wallpaper source information is in `public/ASSETS.md`.
 
 ## Characters and saving
 
@@ -46,3 +46,5 @@ Install dependencies with `pnpm install`, start with `pnpm dev`, and verify a pr
 Run `pnpm test` using Node.js 24 or another runtime supporting TypeScript type stripping. Tests cover window geometry and focus, multiple character saves, failed storage writes, malformed data recovery, restart snapshots, life dates, events after age 0, separate event/mail delivery, required decision blocking, read and archive persistence, duplicate decision protection, and compatibility with older saves.
 
 The project uses React, TypeScript, and Vite. Play using the desktop shortcuts and taskbar buttons.
+
+The fresh-start playtest update clears old v1 prototype saves and backups on first load. New v2 saves persist across future updates.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SAVE_KEY, emptyStore, parseStore, persistStore, loadStore, upsertLife, restartLife, lifeDate } from '../src/saves.ts';
+import { SAVE_KEY, clearPrototypeSaves, emptyStore, parseStore, persistStore, loadStore, upsertLife, restartLife, lifeDate } from '../src/saves.ts';
 import { eventForAge } from '../src/lifeEvents.ts';
 
 const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
@@ -91,3 +91,12 @@ test('life dates follow age and every year after restart has a valid event', () 
    assert.equal(loadStore(disk).lives[0].firstName, 'Jamie');
    assert.equal(loadStore(disk).lives[0].lastName, 'van Dijk');
  });
+
+test('prototype reset removes old saves and backups while retaining new playtest saves', () => {
+  const values = new Map([['life.exe.saves.v1', 'old'], ['life.exe.saves.v1.backup', 'old backup'], [SAVE_KEY, 'new'], ['other-site-data', 'keep']]);
+  clearPrototypeSaves({removeItem: key => values.delete(key)});
+  assert.equal(values.has('life.exe.saves.v1'), false);
+  assert.equal(values.has('life.exe.saves.v1.backup'), false);
+  assert.equal(values.get(SAVE_KEY), 'new');
+  assert.equal(values.get('other-site-data'), 'keep');
+});

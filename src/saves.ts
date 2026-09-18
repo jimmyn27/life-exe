@@ -8,7 +8,11 @@ import { cityById, resolveCity, US_SNAPSHOT } from './catalogs/us/index.ts';
 export type Life = { id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; relationships?: Record<string, RelationshipRecord> };
 export type SaveStore = { version: 1; activeId: string | null; lives: Life[] };
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
-export const SAVE_KEY = 'life.exe.saves.v1';
+export const SAVE_KEY = 'life.exe.saves.v2';
+export function clearPrototypeSaves(storage: Pick<Storage, 'removeItem'>): void {
+  storage.removeItem('life.exe.saves.v1');
+  storage.removeItem('life.exe.saves.v1.backup');
+}
 export const emptyStore = (): SaveStore => ({ version: 1, activeId: null, lives: [] });
 const statNames = ['Health', 'Happiness', 'Smarts', 'Looks'] as const;
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;

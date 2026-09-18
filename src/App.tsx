@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { initialStats, startingLog, type Choice, type LifeEvent, type Stats } from './data';
+import { initialStats, type Choice, type LifeEvent, type Stats } from './data';
 import { Icon, TitleBar, type IconKind } from './ClassicUI';
 import FloatingWindow from './FloatingWindow';
 import DesktopIcons from './DesktopIcons';
 import TaskbarPrograms from './TaskbarPrograms';
 import { CommandPrompt, FileExplorer, MyLife, Messenger, WebSurfer, programs, type ExplorerPage } from './Programs';
 import { activateWindow, createDesktopWindows, fitRect, minimumSize, taskbarWindow, windowIds, type Bounds, type DesktopWindows, type Rect, type WindowId } from './windowManager';
-import { emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore } from './saves';
+import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore } from './saves';
 import { characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
 import { advanceYear, answerLifeEvent } from './mail';
 import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SNAPSHOT } from './catalogs/us/index';
@@ -15,20 +15,21 @@ type Mode = 'desktop' | 'login' | 'off';
 type Modal = 'new' | 'power' | 'restart' | 'quit' | null;
 const titles: Record<WindowId, string> = { Command: 'Command Prompt', Life: 'My Life', Explorer: 'File Explorer', Web: 'Web Surfer', Messenger: 'Messenger' };
 const icons: Record<WindowId, IconKind> = { Command: 'command', Life: 'computer', Explorer: 'folder', Web: 'web', Messenger: 'messenger' };
-function demoLife(): Life { return { id: 'alex-morgan-demo', name: 'Alex Morgan', firstName: 'Alex', lastName: 'Morgan', city: 'New York City', locationId: DEFAULT_CITY_ID, catalogSnapshotId: US_SNAPSHOT.id, age: 18, birthYear: 2000, balance: 2450, stats: { ...initialStats }, log: startingLog('Alex Morgan', 'New York City') }; }
+function blankLife(): Life { return { id: 'new-life-placeholder', name: 'New Life', firstName: 'New', lastName: 'Life', city: 'New York City', locationId: DEFAULT_CITY_ID, catalogSnapshotId: US_SNAPSHOT.id, age: 0, birthYear: 2000, balance: 0, stats: { ...initialStats }, log: [] }; }
 function bootstrap() {
   try {
+    clearPrototypeSaves(window.localStorage);
     const store = loadStore(window.localStorage);
-    return { store, life: structuredClone(store.lives.find(life => life.id === store.activeId) ?? demoLife()), error: '' };
-  } catch { return { store: emptyStore(), life: demoLife(), error: 'Saved characters could not be loaded. You can continue with the preview. If you save again, any unreadable previous save will be kept as a backup.' }; }
+    return { store, life: structuredClone(store.lives.find(life => life.id === store.activeId) ?? blankLife()), error: '' };
+  } catch { return { store: emptyStore(), life: blankLife(), error: 'Saved characters could not be loaded. Start a new life to begin. If you save again, any unreadable previous save will be kept as a backup.' }; }
 }
 
 export default function App() {
   const [boot] = useState(bootstrap);
   const [life, setLife] = useState<Life>(boot.life);
   const [store, setStore] = useState<SaveStore>(boot.store);
-  const [dirty, setDirty] = useState(!boot.store.lives.some(saved => saved.id === boot.life.id));
-  const [mode, setMode] = useState<Mode>('desktop');
+  const [dirty, setDirty] = useState(false);
+  const [mode, setMode] = useState<Mode>('login');
   const [modal, setModal] = useState<Modal>(null);
   const [event, setEvent] = useState<LifeEvent | null>(null);
   const [eventSource, setEventSource] = useState<{ kind: 'year' | 'activity' }>({ kind: boot.life.pendingEvent ? 'year' : 'activity' });
@@ -116,7 +117,7 @@ export default function App() {
     e.preventDefault(); const firstName = draftFirstName.trim(); const lastName = draftLastName.trim(); if (!firstName || !lastName) return; const name = `${firstName} ${lastName}`;
     const city = cityById(draftCity); if (!city) return;
     if (mode === 'desktop' && !saveCurrent()) return;
-    const next = restartLife({ ...demoLife(), id: crypto.randomUUID(), name, firstName, lastName, city: city.name, locationId: city.id });
+    const next = restartLife({ ...blankLife(), id: crypto.randomUUID(), name, firstName, lastName, city: city.name, locationId: city.id });
     setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); closeModal();
   }
   function ageUp() {
@@ -155,7 +156,7 @@ export default function App() {
   }
   function turnOff() { setMode('off'); closeModal(); setMenu(false); }
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
-  function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? demoLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode(store.lives.length ? 'login' : 'desktop'); }
+  function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
   function about() { setMenu(false); setNotice('Life.exe — Luna edition. Web Surfer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
   const dialogTitle = notice ? 'Life.exe' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
@@ -196,9 +197,9 @@ export default function App() {
         <div className="system-tray" title="Life date · annual progression"><div><span>{lifeDate(life)}</span><span>Year {life.age}</span></div></div>
       </footer>
     </> : mode === 'login' ? <div className="xp-login">
-      <div className="xp-login-brand"><Icon kind="start"/><h1>life<span>.exe</span></h1><p>To begin, click your character.</p></div>
+      <div className="xp-login-brand"><Icon kind="start"/><h1>life<span>.exe</span></h1><p>{store.lives.length ? "Choose your character or start a new life." : "Start a new life to begin your story."}</p></div>
       <div className="xp-character-list"><h2>Choose your life</h2>{store.lives.map(saved => <button className="saved-character" key={saved.id} onClick={() => switchCharacter(saved)}><span className="login-avatar"><Icon kind="computer"/></span><span><strong>{saved.name}</strong><small>Age {saved.age} · {displayCity(saved)}</small></span></button>)}<button className="new-character-link" onClick={showNewLife}><Icon kind="new"/>Start a new life</button></div>
-      <footer><button onClick={() => { setMode('desktop'); setModal('power'); }}><Icon kind="power"/>Turn Off Computer</button><span>Your characters are saved on this device.</span></footer>
+      <footer><button onClick={turnOff}><Icon kind="power"/>Turn Off Computer</button><span>Your characters are saved on this device.</span></footer>
     </div> : <div className="xp-off"><Icon kind="start"/><h1>life.exe</h1><p>It is now safe to turn off your computer.</p><small>Your game session has ended.</small><button onClick={powerOn}>Power on</button></div>}
     <dialog ref={modalRef} onCancel={closeModal} className={`classic-window event-dialog ${modal === 'power' ? 'power-dialog' : ''}`} aria-label={dialogTitle}>
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
@@ -211,7 +212,7 @@ export default function App() {
       </> : modal === 'restart' ? <>
         <div className="modal-content"><h2>Restart {life.name}'s life?</h2><p>Return to age 0 with the same name and birthplace. Current stats and life history will reset.</p><p className="modal-note">The saved version stays unchanged until you save again.</p></div><div className="dialog-actions"><button className="classic-button" onClick={restart}>Restart life</button><button className="classic-button" onClick={closeModal}>Cancel</button></div>
       </> : modal === 'new' ? <form onSubmit={startLife}>
-        <div className="modal-content"><div className="dialog-intro"><Icon kind="new"/><div><h2>A new life begins</h2><p>Every story starts at age 0.</p></div></div><label htmlFor="character-first-name">First name:</label><input id="character-first-name" value={draftFirstName} onChange={e => setDraftFirstName(e.target.value)} maxLength={48} autoComplete="given-name" required/><label htmlFor="character-last-name">Last name:</label><input id="character-last-name" value={draftLastName} onChange={e => setDraftLastName(e.target.value)} maxLength={48} autoComplete="family-name" required/><label htmlFor="character-city">Starting city:</label><select id="character-city" value={draftCity} onChange={e => setDraftCity(e.target.value)}>{cityOptions.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</select><p className="modal-note">Your current character is saved before a new life starts.</p></div><div className="dialog-actions"><button className="classic-button" type="submit">Start Life</button><button className="classic-button" type="button" onClick={closeModal}>Cancel</button></div>
+        <div className="modal-content"><div className="dialog-intro"><Icon kind="new"/><div><h2>A new life begins</h2><p>Every story starts at age 0.</p></div></div><label htmlFor="character-first-name">First name:</label><input id="character-first-name" value={draftFirstName} onChange={e => setDraftFirstName(e.target.value)} maxLength={48} autoComplete="given-name" required/><label htmlFor="character-last-name">Last name:</label><input id="character-last-name" value={draftLastName} onChange={e => setDraftLastName(e.target.value)} maxLength={48} autoComplete="family-name" required/><label htmlFor="character-city">Starting city:</label><select id="character-city" value={draftCity} onChange={e => setDraftCity(e.target.value)}>{cityOptions.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</select><p className="modal-note">{mode === 'desktop' ? "Your current character is saved before a new life starts." : "Create your character to begin."}</p></div><div className="dialog-actions"><button className="classic-button" type="submit">Start Life</button><button className="classic-button" type="button" onClick={closeModal}>Cancel</button></div>
       </form> : event && <div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">{eventSource.kind === 'year' ? `Beginning of age ${life.age} · ${event.category}` : event.category}</span><h2>{event.title}</h2></div></div><p className="event-description">{event.text}</p><fieldset className="event-choices"><legend>What will you do?</legend>{event.choices.map((choice, index) => <button className="classic-button choice-button" key={choice.label} onClick={() => choose(choice, index)}><strong>{choice.label}</strong><small>{choice.hint}</small></button>)}</fieldset></div>}
     </dialog>
   </div>;
