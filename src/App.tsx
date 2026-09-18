@@ -14,7 +14,7 @@ import { advanceYear, answerLifeEvent } from './mail';
 import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SNAPSHOT } from './catalogs/us/index';
 
 type Mode = 'desktop' | 'login' | 'off';
-type Modal = 'new' | 'power' | 'restart' | 'quit' | null;
+type Modal = 'new' | 'power' | 'restart' | 'quit' | 'delete' | null;
 const titles: Record<WindowId, string> = { Command: 'Command Prompt', Life: 'My Life', Explorer: 'File Explorer', Web: 'Web Surfer', Messenger: 'Messenger' };
 const icons: Record<WindowId, IconKind> = { Command: 'command', Life: 'computer', Explorer: 'folder', Web: 'web', Messenger: 'messenger' };
 function blankLife(): Life { return { id: 'new-life-placeholder', name: 'New Life', firstName: 'New', lastName: 'Life', city: 'New York City', locationId: DEFAULT_CITY_ID, catalogSnapshotId: US_SNAPSHOT.id, age: 0, birthYear: 2000, balance: 0, stats: { ...initialStats }, log: [] }; }
@@ -32,6 +32,8 @@ export default function App() {
   const [store, setStore] = useState<SaveStore>(boot.store);
   const [dirty, setDirty] = useState(false);
   const [mode, setMode] = useState<Mode>('login');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const deleteTarget = store.lives.find(saved => saved.id === deleteId);
   const [modal, setModal] = useState<Modal>(null);
   const [event, setEvent] = useState<LifeEvent | null>(null);
   const [eventSource, setEventSource] = useState<{ kind: 'year' | 'activity' }>({ kind: boot.life.pendingEvent ? 'year' : 'activity' });
@@ -95,7 +97,7 @@ export default function App() {
   }); }
   function setRect(id: WindowId, rect: Rect) { setWindows(previous => previous ? { ...previous, [id]: { ...previous[id], ...rect } } : previous); }
   function taskClick(id: WindowId) { setWindows(previous => previous ? taskbarWindow(previous, id) : previous); setMenu(false); }
-  function closeModal() { setEvent(null); setModal(null); setNotice(''); }
+  function closeModal() { setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
   function saveCurrent(announce = false): boolean {
     setMenu(false);
     try {
@@ -107,6 +109,16 @@ export default function App() {
     } catch { setModal(null); setNotice('Your life could not be saved. Browser storage may be unavailable or full. Your current progress is still open; please do not turn off or reload until saving works.'); return false; }
   }
   function logOff() { setMenu(false); if (!saveCurrent()) return; closeModal(); setMode('login'); }
+  function deleteCharacter() {
+    if (mode !== 'login' || !deleteTarget) return;
+    const next = { ...store, lives: store.lives.filter(saved => saved.id !== deleteTarget.id), activeId: store.activeId === deleteTarget.id ? null : store.activeId };
+    try {
+      persistStore(window.localStorage, next);
+      setStore(next);
+      if (life.id === deleteTarget.id) { setLife(blankLife()); setDirty(false); }
+      closeModal();
+    } catch { setModal(null); setDeleteId(null); setNotice('This life could not be deleted because browser storage is unavailable. Your saved lives have not been changed.'); }
+  }
   function switchCharacter(saved: Life) {
     try {
       const next = { ...store, activeId: saved.id };
@@ -162,7 +174,7 @@ export default function App() {
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
   function about() { setMenu(false); setNotice('Life.exe — Luna edition. Web Surfer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
-  const dialogTitle = notice ? 'Life.exe' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
+  const dialogTitle = notice ? 'Life.exe' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>
     {mode === 'desktop' ? <>
@@ -202,13 +214,15 @@ export default function App() {
       </footer>
     </> : mode === 'login' ? <div className="xp-login">
       <div className="xp-login-brand"><Icon kind="start"/><h1>life<span>.exe</span></h1><p>{store.lives.length ? "Choose your character or start a new life." : "Start a new life to begin your story."}</p></div>
-      <div className="xp-character-list"><h2>Choose your life</h2>{store.lives.map(saved => <button className="saved-character" key={saved.id} onClick={() => switchCharacter(saved)}><span className="login-avatar"><Icon kind="computer"/></span><span><strong>{saved.name}</strong><small>Age {saved.age} · {displayCity(saved)}</small></span></button>)}<button className="new-character-link" onClick={showNewLife}><Icon kind="new"/>Start a new life</button></div>
+      <div className="xp-character-list"><h2>Choose your life</h2>{store.lives.map(saved => <div className="saved-character-row" key={saved.id}><button className="saved-character" onClick={() => switchCharacter(saved)}><span className="login-avatar"><Icon kind="computer"/></span><span><strong>{saved.name}</strong><small>Age {saved.age} · {displayCity(saved)}</small></span></button><button className="delete-character" aria-label={`Delete ${saved.name}\'s life`} title="Delete life" onClick={() => { setDeleteId(saved.id); setModal('delete'); }}>×</button></div>)}<button className="new-character-link" onClick={showNewLife}><Icon kind="new"/>Start a new life</button></div>
       <footer><button onClick={turnOff}><Icon kind="power"/>Turn Off Computer</button><span>Your characters are saved on this device.</span></footer>
     </div> : <div className="xp-off"><Icon kind="start"/><h1>life.exe</h1><p>It is now safe to turn off your computer.</p><small>Your game session has ended.</small><button onClick={powerOn}>Power on</button></div>}
     <dialog ref={modalRef} onCancel={closeModal} className={`classic-window event-dialog ${modal === 'power' ? 'power-dialog' : ''}`} aria-label={dialogTitle}>
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
       {notice ? <>
         <div className="modal-content information-content"><span className="info-symbol" aria-hidden="true">i</span><p>{notice}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>OK</button></div>
+      </> : modal === 'delete' ? <>
+        <div className="modal-content"><h2>Delete {deleteTarget?.name}'s life?</h2><p>This permanently deletes this saved life from this device. This cannot be undone.</p></div><div className="dialog-actions"><button className="classic-button" onClick={deleteCharacter} disabled={!deleteTarget}>Delete life</button><button className="classic-button" autoFocus onClick={closeModal}>Cancel</button></div>
       </> : modal === 'power' ? <>
         <div className="power-content"><h2>Turn off computer</h2><div className="power-options"><button onClick={() => saveCurrent(true)}><Icon kind="save"/><span>Save</span></button><button onClick={() => dirty ? setModal('quit') : turnOff()}><Icon kind="power"/><span>Turn off</span></button><button onClick={() => setModal('restart')}><Icon kind="restart"/><span>Restart</span></button></div><p>{dirty ? 'You have unsaved changes.' : 'Your current life is saved.'}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>Cancel</button></div>
       </> : modal === 'quit' ? <>

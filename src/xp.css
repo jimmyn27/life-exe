@@ -476,3 +476,9 @@
 .contact-statistics .stat-track {height:12px;}
 .contact-action-list button:disabled {opacity:.5; cursor:default;}
 .contact-action-list button:disabled:hover {background:#f7fbff; border-color:#d6e2ef;}
+
+.saved-character-row{display:flex;align-items:center;gap:8px}
+.saved-character-row .saved-character{flex:1;min-width:0}
+.delete-character{flex-shrink:0;width:24px;height:24px;border:1px solid #d5e2ff88;border-radius:3px;background:#204ca677;color:white;font-size:19px;line-height:18px}
+.delete-character:hover{background:#c54735;border-color:#fff}
+.delete-character:focus-visible{outline:2px solid white;outline-offset:2px}
