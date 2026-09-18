@@ -1,3 +1,4 @@
+import { interactionResult, type InteractionResult } from './interactionResults';
 import { giftOptions } from './gifts';
 import {applySchoolActivity} from './schoolActivities';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -39,6 +40,7 @@ export default function App() {
   const [modal, setModal] = useState<Modal>(null);
   const [event, setEvent] = useState<LifeEvent | null>(null);
   const [eventSource, setEventSource] = useState<{ kind: 'year' | 'activity' }>({ kind: boot.life.pendingEvent ? 'year' : 'activity' });
+  const [result,setResult]=useState<InteractionResult|null>(null);
   const [notice, setNotice] = useState(boot.error);
   const [menu, setMenu] = useState(false);
   const [allPrograms, setAllPrograms] = useState(false);
@@ -51,7 +53,7 @@ export default function App() {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
-  const hasModal = Boolean(modal || event || notice);
+  const hasModal = Boolean(modal || event || notice || result);
   const ageBlocked = hasModal || Boolean(life.pendingEvent) || life.age >= 1000;
   useEffect(() => {
     if (mode !== 'desktop' || !life.pendingEvent) return;
@@ -77,6 +79,7 @@ export default function App() {
     if (!hasModal && dialog?.open) dialog?.close();
     if (modal === 'new') dialog?.querySelector<HTMLInputElement>('input')?.focus();
   }, [hasModal, modal]);
+  useEffect(()=>{if(result)modalRef.current?.querySelector<HTMLButtonElement>('[data-result-ok]')?.focus();},[result]);
   const commandStatus = windows?.Command.status;
   useEffect(() => { if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight; }, [life.log, commandStatus]);
   useEffect(() => {
@@ -100,7 +103,7 @@ export default function App() {
   }); }
   function setRect(id: WindowId, rect: Rect) { setWindows(previous => previous ? { ...previous, [id]: { ...previous[id], ...rect } } : previous); }
   function taskClick(id: WindowId) { setWindows(previous => previous ? taskbarWindow(previous, id) : previous); setMenu(false); }
-  function closeModal() { setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
+  function closeModal() { setResult(null); setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
   function saveCurrent(announce = false): boolean {
     setMenu(false);
     try {
@@ -153,7 +156,11 @@ export default function App() {
       return;
     }
     if (choice.relationship) {
-      const { id, action, giftId } = choice.relationship; setLife(previous => interact(previous, id, action, giftId)); setDirty(true); setEvent(null); return;
+      const { id, action, giftId } = choice.relationship;
+      const groups=characters(life),person=[...groups.personal,...groups.work,...groups.school].find(item=>item.id===id);
+      const next=interact(life,id,action,giftId);
+      if(next!==life && person){setLife(next);setDirty(true);setResult(interactionResult(life,next,person,action,giftId));}
+      setEvent(null); return;
     }
     if (!choice.outcome) { setEvent(null); return; }
     setLife(previous => {
@@ -178,7 +185,7 @@ export default function App() {
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
   function about() { setMenu(false); setNotice('Life.exe — Luna edition. Web Surfer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
-  const dialogTitle = notice ? 'Life.exe' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
+  const dialogTitle = notice ? 'Life.exe' : result ? 'Interaction outcome' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>
     {mode === 'desktop' ? <>
@@ -225,7 +232,7 @@ export default function App() {
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
       {notice ? <>
         <div className="modal-content information-content"><span className="info-symbol" aria-hidden="true">i</span><p>{notice}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>OK</button></div>
-      </> : modal === 'delete' ? <>
+      </> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className={`result-reaction-track ${result.change<0?'reaction-negative':''}`} role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`}}/></div></div>}<p className="result-change">{result.change>0?'Your relationship improved.':result.change<0?'Your relationship decreased.':'Your relationship stayed the same.'}</p>{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
         <div className="modal-content"><h2>Delete {deleteTarget?.name}'s life?</h2><p>This permanently deletes this saved life from this device. This cannot be undone.</p></div><div className="dialog-actions"><button className="classic-button" onClick={deleteCharacter} disabled={!deleteTarget}>Delete life</button><button className="classic-button" autoFocus onClick={closeModal}>Cancel</button></div>
       </> : modal === 'power' ? <>
         <div className="power-content"><h2>Turn off computer</h2><div className="power-options"><button onClick={() => saveCurrent(true)}><Icon kind="save"/><span>Save</span></button><button onClick={() => dirty ? setModal('quit') : turnOff()}><Icon kind="power"/><span>Turn off</span></button><button onClick={() => setModal('restart')}><Icon kind="restart"/><span>Restart</span></button></div><p>{dirty ? 'You have unsaved changes.' : 'Your current life is saved.'}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>Cancel</button></div>

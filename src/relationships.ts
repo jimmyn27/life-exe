@@ -1,3 +1,4 @@
+import { reaction } from './interactionResults.ts';
 import { gifts, giftEffect } from './gifts.ts';
 import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
@@ -66,8 +67,9 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const random=seededRandom(`${life.id}:${id}:money:${life.age}`);
   const given=action==='Ask for money' && random() < (person.strength/100)*(.35+wealth/155);
   const amount=given ? Math.max(1,Math.round((2+wealth*1.8)*(.5+random()*.5))) : 0;
+  const response=reaction(life,person,action,giftId);
   const accepted = person.strength >= 65;
-  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':4,Befriend:5,'Ask for money':0,'Ask out':accepted ? 5 : -2,Compliment:4,Conversation:3,Gift:giftDelta,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
+  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':4,Befriend:5,'Ask for money':0,'Ask out':accepted ? 5 : -2,Compliment:response.delta,Conversation:response.delta,Gift:giftDelta,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
   const text: Record<RelationshipAction,string> = {
     'Act up':`I acted up around ${person.name}. It strained our relationship.`,
     Disrespect:`I disrespected ${person.name}. They were disappointed in me.`,
@@ -75,12 +77,12 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
     Befriend:`I befriended ${person.name}.`,
     'Ask for money':given ? `I asked my ${person.relation.toLowerCase()} for money. They gave me $${amount}.` : `I asked my ${person.relation.toLowerCase()} for money, but they declined.`,
     'Ask out':accepted ? `I asked ${person.name} out. We are now dating.` : `I asked ${person.name} out, but they politely declined.`,
-    Compliment:`I complimented ${person.name}. It brightened their day.`,Conversation:`I had a conversation with ${person.name}. We enjoyed catching up.`,Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
+    Compliment:response.text.replace(/^You /,'I '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked'),Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
     'Hook up':accepted ? `I hooked up with ${person.name}.` : `I asked ${person.name} to hook up, but they declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
-  const happiness = !first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) || action==='Gift' && giftDelta<0 ? -3 : ['Ask out','Hook up'].includes(action) && !accepted ? -1 : 2;
+  const happiness = !first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation'].includes(action) && response.delta<0 ? -3 : ['Ask out','Hook up'].includes(action) && !accepted ? -1 : 2;
   const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(first?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
   return {...life,balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action]}]};
 }

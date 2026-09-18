@@ -495,3 +495,10 @@
 
 .messenger-name{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .messenger-name:hover strong{text-decoration:underline}
+
+.result-reaction{margin:18px 0 10px}
+.result-reaction strong{display:block;margin-bottom:7px;font-size:12px}
+.result-reaction-track{height:18px;background:#fff;border:1px solid #7f9db9;padding:2px;overflow:hidden}
+.result-reaction-track > div{height:100%;background:linear-gradient(#b4df82,#73ac3c)}
+.result-reaction-track.reaction-negative > div{background:linear-gradient(#f3b2a3,#c86049)}
+.result-change{color:#53647b;font-size:11px}
