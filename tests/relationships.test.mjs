@@ -7,7 +7,7 @@ test('profiles have player stats, age with the player, and correct parent action
   const groups = characters(life(18)); const parent = groups.personal[0]; const maya = groups.personal.find(person => person.id === 'maya-chen');
   assert.deepEqual(Object.keys(parent.stats),Object.keys(life(18).stats)); assert.equal(parent.age,46);
   assert.equal(characters(life(19)).personal[0].age,47);
-  assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Insult','Spend time']);
+  assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
   assert.deepEqual(availableActions(maya),relationshipActions.filter(action=>!['Ask for money','Befriend','Act up','Disrespect','Suck up'].includes(action)));
   for (const action of ['Ask out','Hook up','Unfriend']) { const current=life(18); assert.equal(interact(current,parent.id,action),current); }
 });

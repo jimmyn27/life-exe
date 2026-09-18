@@ -492,3 +492,6 @@
 .contact-relationship-meter{display:block;width:clamp(40px,8vw,85px);height:8px;background:#eef3e9;border:1px solid #b4cda2;border-radius:4px;overflow:hidden}
 .contact-relationship-meter > span{display:block;height:100%;background:linear-gradient(#badb94,#75b149)}
 .contact-relationship-value{font-size:10px;color:#526443;width:29px;text-align:right}
+
+.messenger-name{padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.messenger-name:hover strong{text-decoration:underline}

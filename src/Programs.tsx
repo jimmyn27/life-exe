@@ -1,6 +1,6 @@
 import {schoolActivities,hasGraduated,workCategories} from './schoolActivities';
 import { familyMoney } from './family';
-import { useState, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { Icon, PersonIcon, type IconKind } from './ClassicUI';
 import type { Life } from './saves';
 import type { Stats } from './data';
@@ -14,6 +14,9 @@ import { displayCity } from './catalogs/us/index';
 import { majors } from './catalogs/us/education';
 import { careers, positions, partTimeJobs } from './catalogs/us/careers';
 
+function useWindowBack(id: WindowId, back: () => void) {
+ useEffect(()=>{const listener=(event:Event)=>{if((event as CustomEvent<WindowId>).detail===id)back();};window.addEventListener('life-back',listener);return ()=>window.removeEventListener('life-back',listener);},[id,back]);
+}
 export type ExplorerPage = 'Assets' | 'Finances';
 type Activity = (title: string, text: string, outcome: string, effect: Partial<Stats>) => void;
 export const programs: { id: WindowId; name: string; icon: IconKind; description: string }[] = [
@@ -49,7 +52,8 @@ export function MyLife({ life, dirty, onFinances }: { life: Life; dirty: boolean
 export function FileExplorer({ life, page, onPage, onSave, onNotice }: { life: Life; page: ExplorerPage; onPage: (page: ExplorerPage) => void; onSave: () => void; onNotice: (text: string) => void }) {
  const [history,setHistory]=useState<ExplorerPage[]>([]),[folders,setFolders]=useState(true),[expanded,setExpanded]=useState(true);
  function navigate(next:ExplorerPage){if(next!==page){setHistory(previous=>[...previous,page]);onPage(next);}}
- function back(){const previous=history.at(-1);if(previous){onPage(previous);setHistory(history.slice(0,-1));}}
+ function back(){const previous=history.at(-1);if(previous){onPage(previous);setHistory(history.slice(0,-1));}else if(page!=='Assets')onPage('Assets');}
+ useWindowBack('Explorer',back);
  return <><div className="menu-bar"><button onClick={onSave}>Save Life</button><button onClick={()=>setFolders(!folders)}>View</button><button onClick={()=>onNotice('File Explorer holds your assets and finances. Education and work are in lifeconnect.')}>Help</button><Icon kind="start"/></div>
  <div className="xp-toolbar"><button disabled={!history.length} onClick={back}><span className="xp-back">←</span>Back</button><button disabled={page==='Assets'} onClick={()=>navigate('Assets')}><Icon kind="folder"/>Up</button><button onClick={()=>setFolders(!folders)}><Icon kind="folder"/>Folders</button></div>
  <div className="address-bar"><span>Address</span><div className="address-field"><Icon kind="folder"/><span>Assets{page==='Finances'?'\\Finances':''}</span></div><button className="xp-go" onClick={()=>navigate('Assets')}>➜ Go</button></div>
@@ -63,6 +67,7 @@ export function WebSurfer({life,onActivity,onNotice,onSave,onSchoolAction,onAppl
  const occupation=getOccupation(life),school=occupation.school,graduated=hasGraduated(life);
  function navigate(next:WebPage){if(next===page)return;setHistory(previous=>[...previous.slice(0,position+1),next]);setPosition(position+1);setPage(next);setQuery('');}
  function browse(offset:number){const next=position+offset;setPosition(next);setPage(history[next]);setQuery('');}
+ useWindowBack('Web',()=>{if(position>0)browse(-1);else if(page!=='Home')navigate('Home');});
  const categories:WebPage[]=['Home','Education','Work','Activities'];
  const activities=life.age<6?[{title:'Play with toys',description:'Discover something new.',effect:{Happiness:2}},{title:'Story time',description:'Listen to a story.',effect:{Smarts:2}}]:[{title:'Take a walk',description:'Get outside and clear your head.',effect:{Health:2,Happiness:2}},{title:'Read a book',description:'A little curiosity goes a long way.',effect:{Smarts:2}},{title:'Try a creative hobby',description:'Make something just for yourself.',effect:{Happiness:3}}];
  const matches=(name:string)=>name.toLowerCase().includes(query.toLowerCase());
@@ -79,7 +84,7 @@ export function WebSurfer({life,onActivity,onNotice,onSave,onSchoolAction,onAppl
  </div><footer className="web-page-footer">lifeconnect · A world of possibilities.</footer></section><footer className="window-status"><span>Done</span><span>Life portal</span></footer></>;
 }
 
-export function Messenger({ life, onAction }: { life: Life; onAction: (id: string, action: RelationshipAction) => void }) {
+export function Messenger({ life, onAction, onOpenLife }: { life: Life; onOpenLife?: () => void; onAction: (id: string, action: RelationshipAction) => void }) {
   const occupation = getOccupation(life);
   const people = characters(life);
   const [tab, setTab] = useState<'Contacts' | 'Work' | 'School'>('Contacts');
@@ -87,9 +92,10 @@ export function Messenger({ life, onAction }: { life: Life; onAction: (id: strin
   const contacts = activeTab === 'Work' ? people.work : activeTab === 'School' ? people.school : people.personal;
   const groups = [...new Set(contacts.map(contact => contact.group))];
   const [selected, setSelected] = useState<string | null>(null);
+  useWindowBack('Messenger',()=>{if(selected)setSelected(null);else if(activeTab!=='Contacts')setTab('Contacts');});
   const person = contacts.find(contact => contact.id === selected);
-  const descriptions: Record<RelationshipAction, string> = {'Act up':'Misbehave around them.',Disrespect:'Challenge their authority.','Suck up':'Try to win their approval.',Befriend:'Get to know them and become friends.','Ask for money':'Ask your parent for some money.', 'Ask out':'See if there is a spark.',Compliment:'Say something kind.',Conversation:'Talk and catch up.',Gift:'Give a thoughtful gift · $25.00','Hook up':'Find out if the feeling is mutual.',Insult:'Say something hurtful.','Spend time':'Make a memory together.',Unfriend:'End your friendship.'};
-  return <><div className="messenger-banner"><Icon kind="messenger"/><div><strong>{life.name}</strong><small>Age {life.age} · {lifeStage(life.age)}</small></div><span className="messenger-wordmark">Messenger</span></div>
+  const descriptions: Record<RelationshipAction, string> = {'Act up':'Misbehave around them.',Disrespect:'Challenge their authority.','Suck up':'Try to win their approval.',Befriend:'Get to know them and become friends.','Ask for money':'Ask your parent for some money.', 'Ask out':'See if there is a spark.',Compliment:'Say something kind.',Conversation:'Talk and catch up.',Gift:'Choose a gift for them.','Hook up':'Find out if the feeling is mutual.',Insult:'Say something hurtful.','Spend time':'Make a memory together.',Unfriend:'End your friendship.'};
+  return <><div className="messenger-banner"><Icon kind="messenger"/><div><button className="messenger-name" onClick={onOpenLife} title="Open My Life"><strong>{life.name}</strong></button><small>Age {life.age} · {lifeStage(life.age)}</small></div><span className="messenger-wordmark">Messenger</span></div>
     <nav className="messenger-tabs" aria-label="Messenger tabs">{(['Contacts', ...(occupation.job ? ['Work'] : []), ...(occupation.school ? ['School'] : [])] as ('Contacts' | 'Work' | 'School')[]).map(item => <button key={item} className={activeTab === item ? 'messenger-tab-selected' : ''} aria-pressed={activeTab === item} onClick={() => { setTab(item); setSelected(null); }}>{item}</button>)}</nav>
     <div className="messenger-body">
       {person ? <><button className="messenger-back" onClick={() => setSelected(null)}>« Back to contacts</button><div className="contact-heading"><PersonIcon gender={person.gender}/><div><h2>{person.name}</h2><p>{person.relation}{person.status === 'dating' ? ' · Dating' : person.status === 'unfriended' ? ' · Not friends' : ''} · Relationship {person.strength}%</p></div></div><div className="relationship-meter" role="progressbar" aria-label="Relationship strength" aria-valuenow={person.strength} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${person.strength}%`}}/></div>

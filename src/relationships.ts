@@ -1,3 +1,4 @@
+import { gifts, giftEffect } from './gifts.ts';
 import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
 import type { Stats } from './data';
@@ -37,7 +38,7 @@ export function availableActions(person: Person, life?: Life): RelationshipActio
  if(person.parent || person.family) {
   if(life && (life.age<2 || person.age<2)) return [];
   if(life && (life.age<6 || person.age<6)) return ['Conversation','Spend time'];
-  return [...(person.parent?['Ask for money' as const]:[]),'Compliment','Conversation','Insult','Spend time'];
+  return [...(person.parent?['Ask for money' as const]:[]),'Compliment','Conversation',...(person.parent?['Gift' as const]:[]),'Insult','Spend time'];
  }
  if(['Teacher','Principal','Professor'].includes(person.relation) || /\b(teacher|principal|professor)\b/i.test(person.occupation)) return person.friendship ? ['Act up','Compliment','Conversation','Gift','Insult','Spend time','Unfriend'] : ['Act up','Befriend','Compliment','Conversation','Gift','Disrespect','Insult','Suck up'];
  return relationshipActions.filter(action=>!['Act up','Disrespect','Suck up'].includes(action) && action!=='Ask for money' && (action!=='Befriend' || !person.friendship) && (action!=='Unfriend' || person.friendship));
@@ -46,16 +47,18 @@ export function actionUnavailable(life: Life, person: Person, action: Relationsh
   if (!availableActions(person,life).includes(action)) return 'This action is not available with this person.';
   if (['Ask out','Hook up'].includes(action) && (life.age < 18 || person.age < 18)) return 'Available when both characters are adults (18+).';
   if (action === 'Ask for money' && life.relationships?.[person.id]?.usedAge === life.age && life.relationships[person.id].usedActions?.includes(action)) return 'You already asked this parent for money this year.';
-  if (action === 'Gift' && life.balance < 25) return 'You need $25.00 for a gift.';
   if (action === 'Ask out' && person.status === 'dating') return 'You are already dating.';
   if (action === 'Ask out' && Object.entries(life.relationships ?? {}).some(([id, record]) => id !== person.id && record.status === 'dating')) return 'You are already in a relationship.';
   if (action === 'Unfriend' && person.status === 'unfriended') return 'You are not currently friends.';
   return null;
 }
-export function interact(life: Life, id: string, action: RelationshipAction): Life {
+export function interact(life: Life, id: string, action: RelationshipAction, giftId?: string): Life {
   const groups = characters(life);
   const person = [...groups.personal,...groups.work,...groups.school].find(item => item.id === id);
   if (!person || !relationshipActions.includes(action) || actionUnavailable(life,person,action)) return life;
+  const gift=giftId ? gifts.find(item=>item.id===giftId) : undefined;
+  if(action==='Gift' && (giftId && !gift || life.balance<(gift?.price??25)))return life;
+  const giftDelta=gift ? giftEffect(life,person,gift) : 6;
   const previous=life.relationships?.[id];
   const used=previous?.usedAge===life.age ? previous.usedActions??[] : [];
   const first=!used.includes(action);
@@ -64,7 +67,7 @@ export function interact(life: Life, id: string, action: RelationshipAction): Li
   const given=action==='Ask for money' && random() < (person.strength/100)*(.35+wealth/155);
   const amount=given ? Math.max(1,Math.round((2+wealth*1.8)*(.5+random()*.5))) : 0;
   const accepted = person.strength >= 65;
-  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':4,Befriend:5,'Ask for money':0,'Ask out':accepted ? 5 : -2,Compliment:4,Conversation:3,Gift:6,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
+  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':4,Befriend:5,'Ask for money':0,'Ask out':accepted ? 5 : -2,Compliment:4,Conversation:3,Gift:giftDelta,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
   const text: Record<RelationshipAction,string> = {
     'Act up':`I acted up around ${person.name}. It strained our relationship.`,
     Disrespect:`I disrespected ${person.name}. They were disappointed in me.`,
@@ -72,12 +75,12 @@ export function interact(life: Life, id: string, action: RelationshipAction): Li
     Befriend:`I befriended ${person.name}.`,
     'Ask for money':given ? `I asked my ${person.relation.toLowerCase()} for money. They gave me $${amount}.` : `I asked my ${person.relation.toLowerCase()} for money, but they declined.`,
     'Ask out':accepted ? `I asked ${person.name} out. We are now dating.` : `I asked ${person.name} out, but they politely declined.`,
-    Compliment:`I complimented ${person.name}. It brightened their day.`,Conversation:`I had a conversation with ${person.name}. We enjoyed catching up.`,Gift:`I gave ${person.name} a gift. They appreciated the thought.`,
+    Compliment:`I complimented ${person.name}. It brightened their day.`,Conversation:`I had a conversation with ${person.name}. We enjoyed catching up.`,Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
     'Hook up':accepted ? `I hooked up with ${person.name}.` : `I asked ${person.name} to hook up, but they declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
-  const happiness = !first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) ? -3 : ['Ask out','Hook up'].includes(action) && !accepted ? -1 : 2;
+  const happiness = !first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) || action==='Gift' && giftDelta<0 ? -3 : ['Ask out','Hook up'].includes(action) && !accepted ? -1 : 2;
   const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(first?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
-  return {...life,balance:life.balance+amount-(action === 'Gift' ? 25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action]}]};
+  return {...life,balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action]}]};
 }

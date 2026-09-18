@@ -14,7 +14,7 @@ test('family actions unlock at two and six and require sibling age too',()=>{
  const life=create('gates');const mother=characters(life).personal[0];
  for(const age of [0,1])assert.deepEqual(availableActions(mother,{...life,age}),[]);
  for(const age of [2,5])assert.deepEqual(availableActions(mother,{...life,age}),['Conversation','Spend time']);
- assert.deepEqual(availableActions(mother,{...life,age:6}),['Ask for money','Compliment','Conversation','Insult','Spend time']);
+ assert.deepEqual(availableActions(mother,{...life,age:6}),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
  assert.deepEqual(availableActions({...mother,parent:false,family:true,age:1},{...life,age:6}),[]);
  assert.deepEqual(availableActions({...mother,parent:false,family:true,age:2},{...life,age:6}),['Conversation','Spend time']);
 });
