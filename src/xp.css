@@ -482,3 +482,7 @@
 .delete-character{flex-shrink:0;width:24px;height:24px;border:1px solid #d5e2ff88;border-radius:3px;background:#204ca677;color:white;font-size:19px;line-height:18px}
 .delete-character:hover{background:#c54735;border-color:#fff}
 .delete-character:focus-visible{outline:2px solid white;outline-offset:2px}
+
+.school-activity-group{margin:22px 0;border-top:1px solid #b7c7df;padding-top:14px}
+.school-activity-group>h3{color:#1e4d88;margin:0 0 12px}
+.web-content .occupation-details{margin:12px 0}

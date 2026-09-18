@@ -9,7 +9,7 @@ test('older saves get age-appropriate schooling without invented employment', ()
   assert.equal(getOccupation(life(0)).school,null);
   const primary = getOccupation(life(6)); assert.equal(primary.school.level,'Primary school'); assert.equal(schoolYear(life(6),primary.school),1);
   assert.equal(schoolYear(life(11),primary.school),6);
-  const secondary = getOccupation(life(12)); assert.equal(secondary.highestEducation,'Primary school'); assert.equal(secondary.school.level,'Secondary school');
+  const secondary = getOccupation(life(12)); assert.equal(secondary.highestEducation,'Primary school'); assert.equal(secondary.school.level,'Middle school');
   assert.equal(getOccupation(life(18)).highestEducation,'Secondary school'); assert.equal(getOccupation(life(18)).school,null); assert.equal(getOccupation(life(30)).job,null);
 });
 test('school transitions update completed education and current year', () => {
@@ -20,9 +20,9 @@ test('accepted offers create saved occupation records and relevant contacts, dec
   const year = answerLifeEvent(advanceYear(life(18), true),0); const mail = year.inbox[0];
   const declined = answerMail(year,mail.id,1); assert.equal(getOccupation(declined).school,null);
   const student = answerMail(year,mail.id,0); assert.equal(student.occupation.school.name,'Northbridge University'); assert.equal(schoolYear(student,student.occupation.school),1);
-  assert.equal(occupationContacts(student).school.length,3); assert.equal(occupationContacts(student).work.length,0);
+  assert.equal(occupationContacts(student).school.length,31); assert.equal(occupationContacts(student).work.length,0);
   const next = answerLifeEvent(advanceYear(student, true),0); const employed = answerMail(next,next.inbox.at(-1).id,0);
-  assert.equal(employed.occupation.job.employer,'Riverside Library'); assert.equal(employed.occupation.job.salary,32000); assert.equal(occupationContacts(employed).work.length,3); assert.equal(occupationContacts(employed).school.length,3);
+  assert.equal(employed.occupation.job.employer,'Riverside Library'); assert.equal(employed.occupation.job.salary,32000); assert.equal(occupationContacts(employed).work.length,3); assert.equal(occupationContacts(employed).school.length,31);
   assert.deepEqual(save(employed),JSON.parse(JSON.stringify(employed)));
   const qualified = advanceOccupation({...employed,age:22},23); assert.equal(qualified.highestEducation,'University'); assert.equal(qualified.school,null); assert.equal(qualified.job.startAge,20);
   assert.equal(occupationContacts({...employed,age:23,occupation:qualified}).school.length,0);

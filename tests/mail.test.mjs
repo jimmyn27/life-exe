@@ -75,7 +75,7 @@ test('malformed popup and email saves reject duplicates, future ages, invalid ef
 
  test('current age-up simulation updates school before decisions and creates no mail', () => {
    const current = life(11); const next = advanceYear(current);
-   assert.equal(next.age,12); assert.equal(next.occupation.school.level,'Secondary school');
+   assert.equal(next.age,12); assert.equal(next.occupation.school.level,'Middle school');
    assert.equal(next.occupation.highestEducation,'Primary school'); assert.equal(next.inbox.length,0);
    assert.equal(next.pendingEvent.age,12); assert.equal(next.pendingEvent.event.title,'Starting middle school');
    const dormant = {...life(18), inbox:[{id:'old',age:18,sender:'old',read:false,event:next.pendingEvent.event}]};

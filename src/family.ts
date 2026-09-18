@@ -1,3 +1,4 @@
+import {givenNamesForGender,namePool} from './catalogs/us/lifeContent.ts';
 import { olderSiblingAges } from './siblingAges.ts';
 import { pairedParentAges } from './parentAges.ts';
 import type { Stats } from './data';
@@ -12,7 +13,7 @@ const jobs = [
  { education:'University', titles:['Software developer','Senior developer','Engineering manager'], salary:70000 }
 ];
 const clamp = (n: number) => Math.max(0,Math.min(100,n));
-const names = ['Alex','Jordan','Taylor','Jamie','Riley','Sam','Morgan','Casey'];
+const siblingName=(gender:'Male'|'Female',surname:string,random:()=>number,used:Set<string>)=>{const pool=givenNamesForGender(gender);let name='';do{name=`${pool[Math.floor(random()*pool.length)]} ${surname}`;}while(used.has(name));used.add(name);return name;};
 export function promotionChance(years: number): number { return Math.min(.6,.025 + Math.max(0,years)*.035); }
 export function siblingBirthChance(motherAge: number, children: number): number {
  return (motherAge < 30 ? .14 : motherAge < 35 ? .10 : motherAge < 40 ? .055 : motherAge < 45 ? .015 : 0) * Math.pow(.42,Math.max(0,children-2));
@@ -37,13 +38,14 @@ export function generateFamily(id: string, surname: string): Family {
   const career=mother?motherCareer:fatherCareer!, job=jobs[career];
   const ageAtBirth=mother?ages.mother:ages.father;
   const rank=Math.min(2,Math.floor((ageAtBirth-18)/10));
-  return {id:mother?'parent-mother':'parent-father',name:`${(mother?['Elena','Grace','Nadia','Claire']:['Daniel','Marcus','Ethan','David'])[integer(0,3)]} ${mother && !single && random()>.85?'Reed':surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:job.education,occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
+  return {id:mother?'parent-mother':'parent-father',name:`${givenNamesForGender(mother?'Female':'Male')[integer(0,givenNamesForGender(mother?'Female':'Male').length-1)]} ${mother && !single && random()>.85?namePool.surnames[integer(0,namePool.surnames.length-1)]:surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:job.education,occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
  };
  const parents=[makeParent(true),...(!single?[makeParent(false)]:[])];
  const inherit=(key:'Smarts'|'Looks')=>clamp(Math.round(parents.reduce((sum,p)=>sum+p.stats[key],0)/parents.length)+integer(-8,8));
  const siblings:Sibling[]=[];
  const olderAges=olderSiblingAges(random,parents[0].ageAtBirth,parents[1]?.ageAtBirth);
- for(let i=0;i<olderAges.length;i++) siblings.push({id:`sibling-older-${i}`,name:`${names[i]} ${surname}`,gender:random()<.5?'Female':'Male',birthAge:-olderAges[i],stats:stats()});
+ const usedNames=new Set(parents.map(parent=>parent.name));
+ for(let i=0;i<olderAges.length;i++){const gender=random()<.5?'Female':'Male';siblings.push({id:`sibling-older-${i}`,name:siblingName(gender,surname,random,usedNames),gender,birthAge:-olderAges[i],stats:stats()});}
  const income=parents.reduce((sum,p)=>sum+jobs[p.career!].salary*(1+p.rank!*.4),0);
  const money=clamp(Math.round(10+income/5000+parents.reduce((sum,p)=>sum+p.ageAtBirth-18,0)/3+integer(-8,12)+(random()<.12?25:0)));
  return {parents,siblings,money,gender:random()<.5?'Female':'Male',planned:random()<.65,birthStats:{Health:integer(85,100),Happiness:integer(70,95),Smarts:inherit('Smarts'),Looks:inherit('Looks')},origin:structuredClone({parents,money,siblings})};
@@ -72,8 +74,8 @@ export function advanceFamily(family: Family | undefined,id:string,age:number,su
  const mother=parents.find(p=>p.relation==='Mother');
  let newborn:Sibling|undefined;
  if(mother && random()<siblingBirthChance(mother.ageAtBirth+age,siblings.length+1)) {
-  const index=siblings.length;
-  newborn={id:`sibling-born-${age}`,name:`${names[index%names.length]}${index>=names.length?' '+(index+1):''} ${surname}`,gender:random()<.5?'Female':'Male',birthAge:age,stats:{Health:90,Happiness:80,Smarts:family.birthStats.Smarts,Looks:family.birthStats.Looks}};
+  const gender=random()<.5?'Female':'Male';
+  newborn={id:`sibling-born-${age}`,name:siblingName(gender,surname,random,new Set([...parents,...siblings].map(person=>person.name))),gender,birthAge:age,stats:{Health:90,Happiness:80,Smarts:family.birthStats.Smarts,Looks:family.birthStats.Looks}};
   siblings.push(newborn);
  }
  const growth=.2+parents.reduce((sum,p)=>sum+(p.rank??0)*.15,0)+promotions.length*.8;

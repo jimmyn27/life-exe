@@ -57,20 +57,29 @@ function validLife(value: unknown): value is Life {
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
       if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
-      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Befriend','Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if(record.friendship!==undefined && typeof record.friendship!=='boolean')return false;
+      const friendProfile=record.profile;
+      if(friendProfile!==undefined && (!object(friendProfile) || !['name','gender','education','occupation'].every(key=>typeof friendProfile[key]==='string') || !Number.isInteger(friendProfile.ageOffset) || (friendProfile.ageOffset as number)<0 || (friendProfile.ageOffset as number)>100))return false;
       const npcStats = record.stats;
-      if (!id || !object(record) || !['friend', 'dating', 'unfriended'].includes(record.status as string) || typeof record.strength !== 'number' || !Number.isFinite(record.strength) || record.strength < 0 || record.strength > 100 || !object(npcStats) || !statNames.every(key => typeof npcStats[key] === 'number' && Number.isFinite(npcStats[key]) && (npcStats[key] as number) >= 0 && (npcStats[key] as number) <= 100)) return false;
+      if (!id || !object(record) || !['acquaintance','friend', 'dating', 'unfriended'].includes(record.status as string) || typeof record.strength !== 'number' || !Number.isFinite(record.strength) || record.strength < 0 || record.strength > 100 || !object(npcStats) || !statNames.every(key => typeof npcStats[key] === 'number' && Number.isFinite(npcStats[key]) && (npcStats[key] as number) >= 0 && (npcStats[key] as number) <= 100)) return false;
     }
   }
   if (value.occupation !== undefined) {
     const occupation = value.occupation;
     const percentage = (number: unknown) => typeof number === 'number' && Number.isFinite(number) && number >= 0 && number <= 100;
     const startAge = (age: unknown) => Number.isInteger(age) && (age as number) >= 0 && (age as number) <= (value.age as number);
-    if (!object(occupation) || !['None', 'Primary school', 'Secondary school', 'University'].includes(occupation.highestEducation as string)) return false;
+    if (!object(occupation) || !['None', 'Primary school', 'Middle school', 'Secondary school', 'University'].includes(occupation.highestEducation as string)) return false;
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
     const school = occupation.school;
-    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study hard','Join an activity'].includes(action as string))))) return false;
+    const activityIds=['chess','debate','art','science','basketball','soccer','track','swimming'];
+    if(object(school)) {
+      if(school.memberships!==undefined && (!Array.isArray(school.memberships) || new Set(school.memberships).size!==school.memberships.length || !school.memberships.every(id=>activityIds.includes(id as string))))return false;
+      if(school.activityAttempts!==undefined && (!object(school.activityAttempts) || !Object.entries(school.activityAttempts).every(([id,attempt])=>activityIds.includes(id) && object(attempt) && startAge(attempt.age) && typeof attempt.accepted==='boolean')))return false;
+      if(school.roster!==undefined && (!Array.isArray(school.roster) || school.roster.length>80 || !school.roster.every(person=>object(person) && typeof person.id==='string' && typeof person.name==='string' && ['Male','Female'].includes(person.gender as string) && ['Classmate','Teacher','Principal','Professor'].includes(person.relation as string) && typeof person.group==='string' && percentage(person.strength) && Number.isInteger(person.ageOffset) && (person.ageOffset as number)>=0 && (person.ageOffset as number)<=100 && (person.subject===undefined || typeof person.subject==='string')) || new Set(school.roster.map((person:Record<string,unknown>)=>person.id)).size!==school.roster.length))return false;
+    }
+    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Middle school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study hard','Join an activity'].includes(action as string))))) return false;
   }
   if (value.pendingEvent !== undefined && (!object(value.pendingEvent) || value.pendingEvent.age !== value.age || !validEvent(value.pendingEvent.event) || value.pendingEvent.queue !== undefined && (!Array.isArray(value.pendingEvent.queue) || !value.pendingEvent.queue.every(validEvent)))) return false;
   if (value.inbox !== undefined) {
@@ -100,6 +109,22 @@ export function loadStore(storage: StorageLike): SaveStore { const store = parse
   if (life.firstName === undefined) {
     const [firstName, ...rest] = life.name.trim().split(/\s+/);
     if (rest.length) upgraded = { ...upgraded, firstName, lastName: rest.join(' ') };
+  }
+  if(upgraded.relationships) {
+    const legacyPeople:Record<string,{name:string;gender:string;ageOffset:number;staff?:boolean}>={
+      'maya-chen':{name:'Maya Chen',gender:'Female',ageOffset:0},
+      'oliver-patel':{name:'Oliver Patel',gender:'Male',ageOffset:0},
+      'sofia-reyes':{name:'Sofia Reyes',gender:'Female',ageOffset:0},
+      'amelia-brooks':{name:'Amelia Brooks',gender:'Female',ageOffset:25,staff:true},
+      'grace-turner':{name:'Grace Turner',gender:'Female',ageOffset:25,staff:true},
+      'noah-reed':{name:'Noah Reed',gender:'Male',ageOffset:3},
+      'priya-shah':{name:'Priya Shah',gender:'Female',ageOffset:3}
+    };
+    upgraded={...upgraded,relationships:Object.fromEntries(Object.entries(upgraded.relationships).map(([id,record])=>{
+      const person=legacyPeople[id];
+      if(!person || record.profile || !['friend','dating'].includes(record.status))return [id,record];
+      return [id,{...record,friendship:true,profile:{name:person.name,gender:person.gender,ageOffset:person.ageOffset,education:person.staff?'University':upgraded.age>=18?'Secondary school':upgraded.age>=15?'Middle school':upgraded.age>=12?'Primary school':'No completed schooling yet',occupation:person.staff?'Teacher or manager':upgraded.age<18?'Student':'Not employed'}}];
+    }))};
   }
   if (upgraded.age === 0 && upgraded.pendingEvent?.age === 0) upgraded = {...upgraded,pendingEvent:undefined,log:[{age:0,tag:'LIFE',text:birthIntroduction(upgraded.name,upgraded.city,upgraded.family)}]};
   const city = life.locationId ? cityById(life.locationId) : resolveCity(life.city);
