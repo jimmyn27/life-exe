@@ -1,8 +1,10 @@
+import {initializeWorkRelationships} from './relationships.ts';
+import {advanceFriendships,resolveFriendship} from './friendships.ts';
 import {advanceCommitments} from './schoolCommitments.ts';
 import { advanceFamily } from './family.ts';
 import type { Life } from './saves';
 import type { LifeEvent } from './data';
-import { advanceOccupation, getOccupation, university, libraryJob } from './occupation.ts';
+import { advanceOccupation, schoolPopularity, getOccupation, university, libraryJob } from './occupation.ts';
 import { eventForAge } from './lifeEvents.ts';
 
 export type LifeMail = { id: string; age: number; sender: string; read: boolean; archived?: boolean; event: LifeEvent; decision?: number };
@@ -21,6 +23,7 @@ export function mailForAge(age: number): { sender: string; event: LifeEvent }[] 
 }
 export function advanceYear(life: Life, deliverMail = false): Life {
   if (life.pendingEvent || deliverMail && hasRequiredDecisions(life) || life.age >= 1000) return life;
+  life=initializeWorkRelationships(life);
   const age = life.age + 1;
   const event: LifeEvent = age === 18 && !getOccupation(life).droppedOut ? { category: 'Education', title: 'Congratulations, graduate!', text: 'You have graduated from high school. A whole new chapter is ahead. How would you like to celebrate?', choices: [
     { label: 'Celebrate with friends', hint: 'Share this moment.', outcome: 'I graduated from high school. I celebrated with my friends.', effect: { Happiness: 4 } },
@@ -29,12 +32,13 @@ export function advanceYear(life: Life, deliverMail = false): Life {
   const growth=advanceFamily(life.family,life.id,age,life.lastName??life.name.split(' ').slice(1).join(' '));
   const birth:LifeEvent|undefined=growth.newborn?{category:'Family',title:'A new sibling!',text:`Your mother gave birth to ${growth.newborn.name}, your new ${growth.newborn.gender==='Male'?'brother':'sister'}.`,choices:[{label:'Welcome to the family',hint:'Meet your new sibling.',outcome:`My ${growth.newborn.gender==='Male'?'brother':'sister'} ${growth.newborn.name} was born.`}]}:undefined;
   const next:Life={ ...life, ...(growth.family?{family:growth.family}:{}), age, log:[...life.log,...growth.promotions.map(parent=>({age,tag:'LIFE',text:`My ${parent.relation.toLowerCase()} has been promoted to ${parent.occupation}.`}))], occupation: advanceOccupation(life, age), pendingEvent: birth ? {age,event:birth,queue:[event]} : { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
-  return advanceCommitments(life,next);
+  const friendships=advanceFriendships(advanceCommitments(life,next));if(friendships.life.occupation?.school)friendships.life.occupation.school={...friendships.life.occupation.school,popularity:schoolPopularity(friendships.life,friendships.life.occupation.school)};const events=[...friendships.events,...(birth?[birth]:[]),event];return {...friendships.life,pendingEvent:{age,event:events[0],...(events.length>1?{queue:events.slice(1)}:{})}};
 }
 export function answerLifeEvent(life: Life, decision: number): Life {
   const pending = life.pendingEvent;
   if (!pending || !Number.isInteger(decision) || !pending.event.choices[decision]) return life;
   const choice = pending.event.choices[decision];
+  if(choice.friendshipDecision){const resolved=resolveFriendship(life,choice.friendshipDecision.id,choice.friendshipDecision.salvage);if(resolved.occupation?.school)resolved.occupation={...resolved.occupation,school:{...resolved.occupation.school,popularity:schoolPopularity(resolved,resolved.occupation.school)}};const next=resolved.pendingEvent?.queue;return {...resolved,pendingEvent:next?.length?{age:pending.age,event:next[0],...(next.length>1?{queue:next.slice(1)}:{})}:undefined};}
   const stats = { ...life.stats };
   for (const key of Object.keys(choice.effect ?? {}) as (keyof typeof stats)[]) stats[key] = Math.max(0, Math.min(100, stats[key] + (choice.effect?.[key] ?? 0)));
   const occupation = { ...getOccupation(life) };

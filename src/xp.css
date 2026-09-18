@@ -542,3 +542,5 @@
 .home-schedule small{font-size:10px;color:#6a7f98;display:block;text-align:right;margin-top:5px}
 
 .home-widgets{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.home-widget{border:1px solid #9ebbe0;border-radius:4px;padding:10px;background:#f5f9ff;display:flex;flex-direction:column;gap:7px;text-align:left;cursor:pointer;color:#22456b;min-width:150px}.home-widget:hover{background:#e7f1ff}.home-schedule{width:190px}.stress-row{display:flex;align-items:center;gap:8px;width:100%}.stress-row .relationship-meter{flex:1;min-width:80px}.schedule-breakdown{padding-left:22px}.schedule-breakdown li{margin:10px 0}.contact-relationship{width:90px}
+
+.enternet-explorer-contacts .contact-relationship{width:110px;flex:0 0 110px}.enternet-explorer-contacts .contact-relationship-meter{width:100%;height:10px}.interaction-emoji{font-size:23px;width:30px;text-align:center;flex:0 0 30px}

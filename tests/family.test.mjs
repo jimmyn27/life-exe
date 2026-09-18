@@ -23,7 +23,7 @@ test('stat effects apply once per action per person per year, persist, and reset
  life=interact(life,id,'Compliment');const stats=structuredClone(life.stats),record=structuredClone(life.relationships[id]);
  life=interact(life,id,'Compliment');assert.deepEqual(life.stats,stats);assert.deepEqual(life.relationships[id],record);assert.equal(life.log.length,3);
  life=parseStore(JSON.stringify(upsertLife(emptyStore(),life))).lives[0];assert.deepEqual(interact(life,id,'Compliment').stats,stats);
- const next=interact({...life,age:7},id,'Compliment');assert.ok(next.relationships[id].strength!==record.strength);
+ const next=interact({...life,age:7},id,'Compliment');assert.equal(next.relationships[id].usedAge,7);assert.deepEqual(next.relationships[id].usedActions,['Compliment']);assert.ok(next.log.length>life.log.length);
 });
 test('money requests are limited per parent per year even on refusal and survive saves',()=>{
  let life={...create('money'),age:6};

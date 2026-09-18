@@ -1,9 +1,10 @@
+import {romanceOutcome} from './romance.ts';
 import { personAddress } from './personAddress.ts';
 import { seededRandom } from './family.ts';
 import { giftEffect, gifts } from './gifts.ts';
 import type { Life } from './saves';
 import type { Person, RelationshipAction } from './relationships';
-export type InteractionResult = {title:string;text:string;meter?:{label:string;value:number};change:number;note?:string};
+export type InteractionResult = {title:string;text:string;meter?:{label:string;value:number};change:number;bars?:{label:string;value:number}[];note?:string};
 const compliments=['You told NAME they have a wonderful sense of humor.','You called NAME thoughtful and kind.','You told NAME you admire their creativity.','You complimented NAME on their great sense of style.'];
 export function reaction(life:Life,person:Person,action:RelationshipAction,giftId?:string) {
  const random=seededRandom(`${life.id}:${person.id}:${life.age}:${action}:response`);
@@ -20,6 +21,7 @@ export function reaction(life:Life,person:Person,action:RelationshipAction,giftI
  return {delta,value:delta<0?Math.round(value/35*12):Math.min(100,45+delta*7),text};
 }
 export function interactionResult(before:Life,after:Life,person:Person,action:RelationshipAction,giftId?:string):InteractionResult {
+ const romance=romanceOutcome(before,person,action);
  const response=reaction(before,person,action,giftId);
  const change=(after.relationships?.[person.id]?.strength??person.strength)-person.strength;
  const repeated=before.relationships?.[person.id]?.usedAge===before.age && before.relationships[person.id].usedActions?.includes(action);
@@ -27,5 +29,5 @@ export function interactionResult(before:Life,after:Life,person:Person,action:Re
  const pronoun=person.gender==='Female'?'Her':'His';
  const log=after.log.at(-1)?.text??'';
  const text=hasBar?response.text:log.replace(/^I was /,'You were ').replace(/^I /,'You ').replace(/my /g,'your ').replace(/We /g,'You both ').replace(/our relationship/g,'your relationship').replace(/my friendship/g,'your friendship');
- return {title:`${action} · ${personAddress(person,'label')}`,text,change,...(hasBar?{meter:{label:`${pronoun} ${action==='Conversation'?'agreement':'appreciation'}`,value:repeated?50:response.value}}:{}),...(repeated?{note:'You already received the relationship effect of this interaction this year.'}:{})};
+ return {title:`${action} · ${personAddress(person,'label')}`,text,change,...(['Hook up','Make love'].includes(action)&&romance.accepted?{bars:[{label:'Your Enjoyment',value:romance.yourEnjoyment},{label:`${pronoun} Enjoyment`,value:romance.theirEnjoyment}]}:{}),...(hasBar?{meter:{label:`${pronoun} ${action==='Conversation'?'agreement':'appreciation'}`,value:repeated?50:response.value}}:{}),...(repeated?{note:'You already received the relationship effect of this interaction this year.'}:{})};
 }

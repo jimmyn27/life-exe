@@ -21,7 +21,7 @@ const statNames = ['Health', 'Happiness', 'Smarts', 'Looks'] as const;
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 function validEvent(value: unknown): value is LifeEvent {
   if (!object(value) || typeof value.title !== 'string' || typeof value.text !== 'string' || typeof value.category !== 'string' || !Array.isArray(value.choices) || !value.choices.length) return false;
-  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
+  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.friendshipDecision===undefined || object(choice.friendshipDecision) && typeof choice.friendshipDecision.id==='string' && choice.friendshipDecision.id.length>0 && typeof choice.friendshipDecision.salvage==='boolean') && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
 }
 function validLife(value: unknown): value is Life {
   if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' || !value.name.trim() || typeof value.city !== 'string') return false;
@@ -60,7 +60,7 @@ function validLife(value: unknown): value is Life {
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
       if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
-      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Flirt','Gift','Hook up','Make love','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
       if(record.friendship!==undefined && typeof record.friendship!=='boolean')return false;
       const friendProfile=record.profile;
       if(friendProfile!==undefined && (!object(friendProfile) || !['name','gender','education','occupation'].every(key=>typeof friendProfile[key]==='string') || !Number.isInteger(friendProfile.ageOffset) || (friendProfile.ageOffset as number)<0 || (friendProfile.ageOffset as number)>100))return false;
