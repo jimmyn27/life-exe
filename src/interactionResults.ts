@@ -11,7 +11,8 @@ export function reaction(life:Life,person:Person,action:RelationshipAction,giftI
  const value=Math.min(100,Math.round(sample*100));
  const delta=value<=15?-4:value<=35?-2:value<=55?2:value<=75?4:7;
  const topics=life.age<6?['your favorite toys','animals','a story you heard','what to play next']:['your favorite movies','music','school','your plans for the future','sports','a funny memory'];
- const text=action==='Suck up'?`You told ${personAddress(person)} their class is your favorite.`:action==='Compliment'?compliments[Math.floor(random()*compliments.length)].replace('NAME',personAddress(person)):action==='Conversation'?`You and ${personAddress(person)} talked about ${topics[Math.floor(random()*topics.length)]}.`:'';
+ const rawText=action==='Suck up'?`You told ${personAddress(person)} their class is your favorite.`:action==='Compliment'?compliments[Math.floor(random()*compliments.length)].replace('NAME',personAddress(person)):action==='Conversation'?`You and ${personAddress(person)} talked about ${topics[Math.floor(random()*topics.length)]}.`:'';
+ const text=rawText.replace(/they have/g,person.gender==='Female'?'she has':'he has').replace(/their /g,person.gender==='Female'?'her ':'his ');
  if(action==='Gift'){
   const gift=gifts.find(item=>item.id===giftId),effect=gift?giftEffect(life,person,gift):6;
   return {delta:effect,value:effect<0?Math.max(0,15+effect):Math.min(100,45+effect*4),text:gift?`You gave ${personAddress(person)} ${gift.name.toLowerCase()} ($${gift.price}).`:`You gave ${personAddress(person)} a gift.`};

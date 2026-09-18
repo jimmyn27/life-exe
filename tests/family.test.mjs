@@ -39,3 +39,12 @@ test('annual family simulation is deterministic, births queue events and restart
  if(next.pendingEvent.queue){births++;assert.equal(next.pendingEvent.event.category,'Family');const answered=answerLifeEvent(next,0);assert.ok(answered.pendingEvent);assert.equal(answerLifeEvent(answered,0).pendingEvent,undefined);assert.deepEqual(parseStore(JSON.stringify(upsertLife(emptyStore(),next))).lives[0],JSON.parse(JSON.stringify(next)));}}
  assert.ok(births>0);
 });
+
+test('refused money requests cost two relationship points and use parent pronouns only once yearly',()=>{
+ const current={...create('refused-money'),age:6};const parent=characters(current).personal.find(p=>p.parent);
+ current.relationships={[parent.id]:{strength:0,status:'friend',stats:parent.stats}};
+ const denied=interact(current,parent.id,'Ask for money');assert.match(denied.log.at(-1).text,/but (she|he) declined/);assert.equal(denied.balance,current.balance);
+ assert.equal(interact(denied,parent.id,'Ask for money'),denied);
+ let found=false;for(let i=0;i<100;i++){const candidate={...create(`refusal-${i}`),age:6};const p=characters(candidate).personal[0];const next=interact(candidate,p.id,'Ask for money');if(next.balance===candidate.balance){assert.equal(next.relationships[p.id].strength,p.strength-2);found=true;break;}}
+ assert.ok(found);
+});

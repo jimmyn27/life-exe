@@ -1,0 +1,5 @@
+import {scheduleBreakdown,scheduleHours} from './schoolCommitments';
+import {barColor} from './statBars';
+import type {Life} from './saves';
+export function StressBar({hours}:{hours:number}){const value=Math.min(100,Math.round(hours/60*100));return <div className="stress-row"><span>Stress</span><div className="relationship-meter" role="progressbar" aria-label="Stress" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${value}%`,background:barColor(100-value)}}/></div></div>;}
+export default function SchedulePanel({life,onClose}:{life:Life;onClose:()=>void}){const hours=scheduleHours(life);return <><div className="modal-content"><h2>Weekly schedule</h2><ul className="schedule-breakdown">{scheduleBreakdown(life).map((item,i)=><li key={i}>{item.name} ({item.hours} hours)</li>)}</ul>{!hours && <p>No scheduled commitments yet.</p>}<p><strong>Total: {hours} hours/week</strong></p><StressBar hours={hours}/></div><div className="dialog-actions"><button className="classic-button" onClick={onClose}>OK</button></div></>;}

@@ -7,11 +7,14 @@ export type MembershipAction='Train'|'Quit'|'Hours';
 export const newMembership=(age:number):Membership=>({performance:50,joinAge:age,years:0,rank:0,hours:5});
 export const membershipInfo=(school:School,id:string,age:number):Membership=>school.activityDetails?.[id]??newMembership(age);
 export const membershipRank=(group:string,rank:number)=>group==='Sports'?['Benchwarmer','Starter','Captain'][rank]:['Member','Vice President','President'][rank];
-export function scheduleHours(life:Life,occupation:Occupation=getOccupation(life)):number {
- const school=occupation.school;
- const job=occupation.job;const jobHours=job?Number(job.hours.match(/(\d+)\s*hours/i)?.[1]??(job.hours.toLowerCase().includes('part')?15:40)):0;
- return (school?40:0)+(school?.memberships??[]).reduce((sum,id)=>sum+membershipInfo(school!,id,life.age).hours,0)+jobHours;
+export function scheduleBreakdown(life:Life,occupation:Occupation=getOccupation(life)):{name:string;hours:number}[] {
+ const school=occupation.school,job=occupation.job,items:{name:string;hours:number}[]=[];
+ if(school)items.push({name:school.level==='Secondary school'?'High school student':school.level==='Primary school'?'Elementary school student':`${school.level} student`,hours:40});
+ for(const id of school?.memberships??[]){const activity=schoolActivities.find(a=>a.id===id);if(activity)items.push({name:schoolActivityName(activity,life.family?.gender),hours:membershipInfo(school!,id,life.age).hours});}
+ if(job)items.push({name:job.position,hours:Number(job.hours.match(/(\d+)\s*hours/i)?.[1]??(job.hours.toLowerCase().includes('part')?15:40))});
+ return items;
 }
+export const scheduleHours=(life:Life,occupation:Occupation=getOccupation(life)):number=>scheduleBreakdown(life,occupation).reduce((sum,item)=>sum+item.hours,0);
 const clamp=(value:number)=>Math.max(0,Math.min(100,value));
 export const dismissalChance=(performance:number)=>performance>=50?0:Math.min(.9,(50-performance)/60);
 export function advanceCommitments(before:Life,after:Life):Life {

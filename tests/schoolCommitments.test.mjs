@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {getOccupation,schoolAction} from '../src/occupation.ts';
 import {characters,interact} from '../src/relationships.ts';
 import {applySchoolActivity,manageSchoolActivity} from '../src/schoolActivities.ts';
-import {newMembership,membershipInfo,scheduleHours,advanceCommitments,dismissalChance} from '../src/schoolCommitments.ts';
+import {newMembership,membershipInfo,scheduleHours,scheduleBreakdown,advanceCommitments,dismissalChance} from '../src/schoolCommitments.ts';
 import {advanceClassmate,npcBaseStats,classmatePopularity} from '../src/npcSchool.ts';
 import {advanceYear} from '../src/mail.ts';
 import {parseStore,upsertLife,emptyStore} from '../src/saves.ts';
@@ -47,4 +47,12 @@ test('classmate grades start at smarts, fluctuate annually and reset at stage tr
 });
 test('save validation rejects malformed membership hours, performance and years',()=>{
  for(const mutate of [s=>s.activityDetails.chess.hours=11,s=>s.activityDetails.chess.performance=-1,s=>s.activityDetails.chess.years=10,s=>s.roster[0].grades=150]){const current=enrolled(['chess']);mutate(current.occupation.school);assert.throws(()=>saved(current));}
+});
+
+test('schedule breakdown itemizes school, extracurriculars and work and sums to the displayed total',()=>{
+ let current=enrolled(['basketball','chess']);current=manageSchoolActivity(current,'basketball','Hours',10);
+ current.occupation.job={position:'Library assistant',employer:'Library',salary:1000,performance:50,startAge:14,hours:'Part-time · 12 hours / week'};
+ const rows=scheduleBreakdown(current);assert.equal(rows[0].name,'High school student');assert.equal(rows[0].hours,40);
+ assert.ok(rows.some(row=>row.name==='Basketball team' && row.hours===10));assert.ok(rows.some(row=>row.name==='Chess club' && row.hours===5));
+ assert.equal(rows.at(-1).hours,12);assert.equal(rows.reduce((sum,row)=>sum+row.hours,0),scheduleHours(current));assert.equal(scheduleHours(current),67);
 });

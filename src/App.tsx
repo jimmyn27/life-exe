@@ -1,3 +1,5 @@
+import SchedulePanel from './SchedulePanel';
+import {barColor} from './statBars';
 import {manageSchoolActivity} from './schoolActivities';
 import type {MembershipAction} from './schoolCommitments';
 import SchoolDancePanel from './SchoolDancePanel';
@@ -23,7 +25,7 @@ import { advanceYear, answerLifeEvent } from './mail';
 import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SNAPSHOT } from './catalogs/us/index';
 
 type Mode = 'desktop' | 'login' | 'off';
-type Modal = 'new' | 'power' | 'restart' | 'quit' | 'delete' | null;
+type Modal = 'new' | 'power' | 'restart' | 'quit' | 'delete' | 'schedule' | null;
 const titles: Record<WindowId, string> = { Command: 'Command Prompt', Life: 'My Life', Explorer: 'File Explorer', Web: 'Enternet Explorer', Messenger: 'Messenger' };
 const icons: Record<WindowId, IconKind> = { Command: 'command', Life: 'computer', Explorer: 'folder', Web: 'web', Messenger: 'messenger' };
 function blankLife(): Life { return { id: 'new-life-placeholder', name: 'New Life', firstName: 'New', lastName: 'Life', city: 'New York City', locationId: DEFAULT_CITY_ID, catalogSnapshotId: US_SNAPSHOT.id, age: 0, birthYear: 2000, balance: 0, stats: { ...initialStats }, log: [] }; }
@@ -154,13 +156,12 @@ export default function App() {
     if (ageBlocked) return;
     const next = advanceYear(life);
     if (next === life) return;
-    setLife(next); setDirty(true); setMenu(false); openWindow('Command');
+    setLife(next); setDirty(true); setMenu(false);
   }
   function resumeEvent() { if (life.pendingEvent) { setEventSource({ kind: 'year' }); setEvent(life.pendingEvent.event); } }
   function choose(choice: Choice, index: number) {
     if (eventSource.kind === 'year') {
       setLife(previous => answerLifeEvent(previous, index)); setDirty(true); setEvent(null);
-      openWindow('Command');
       return;
     }
     if(choice.membershipAction){setEvent(null);finishMembershipAction(choice.membershipAction.id,choice.membershipAction.action);return;}
@@ -179,7 +180,7 @@ export default function App() {
       for (const key of Object.keys(choice.effect ?? {}) as (keyof Stats)[]) stats[key] = Math.max(0, Math.min(100, stats[key] + (choice.effect?.[key] ?? 0)));
       return { ...previous, age, stats, log: [...previous.log, { age, tag: 'ACTIVITY', text: choice.outcome }] };
     });
-    setDirty(true); setEvent(null); openWindow('Command');
+    setDirty(true); setEvent(null);
   }
   function activity(title: string, text: string, outcome: string, effect: Partial<Stats>) {
     setEventSource({ kind: 'activity' }); setEvent({ category: 'Activity', title, text, choices: [{ label: 'Try this activity', hint: 'Make a little time for it.', outcome, effect }, { label: 'Maybe another time', hint: 'Return to your day.', outcome: 'I decided to take it easy today.' }] });
@@ -216,14 +217,14 @@ export default function App() {
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
   function about() { setMenu(false); setNotice('Life.exe — Luna edition. Enternet Explorer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
-  const dialogTitle = notice ? 'Life.exe' : danceOpen ? 'School dance' : result ? 'Interaction outcome' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
+  const dialogTitle = notice ? 'Life.exe' : danceOpen ? 'School dance' : result ? 'Interaction outcome' : modal === 'schedule' ? 'Schedule' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>
     {mode === 'desktop' ? <>
       <div className="desktop-workspace" ref={workspaceRef}>
-        <DesktopIcons onOpenLife={openMyLife}/>
+        <DesktopIcons onOpen={id=>id==='Life'?openMyLife():openWindow(id)}/>
         {windows && windowIds.filter(id => windows[id].status !== 'closed').map(id => <FloatingWindow key={`${life.id}:${id}`} id={id} title={titles[id]} icon={icons[id]} state={windows[id]} bounds={bounds} active={activeId === id} className={`program-window program-${id.toLowerCase()}`} onFocus={() => focusWindow(id)} onChange={rect => setRect(id, rect)} onMinimize={() => minimize(id)} onMaximize={() => toggleMaximize(id)} onClose={() => closeWindow(id)}>
-          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onMembership={membershipAction} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
+          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onSchedule={()=>setModal('schedule')} onFinances={()=>{setExplorerPage('Finances');openWindow('Explorer');}} onMembership={membershipAction} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
         </FloatingWindow>)}
         <div className="age-up-dock"><span className="age-dock-label">YOUR NEXT CHAPTER</span><button className="classic-button desktop-age-up" disabled={ageBlocked} onClick={ageUp}><span className="age-dock-icon" aria-hidden="true">↑</span><span><strong>Age Up</strong><small>{life.pendingEvent ? "Life event needs a decision" : `Begin age ${life.age + 1}`}</small></span><span className="age-dock-arrow" aria-hidden="true">→</span></button>{life.pendingEvent && !event && <button className="classic-button resume-life-event" onClick={resumeEvent}>Review life event…</button>}</div>
       </div>
@@ -263,7 +264,7 @@ export default function App() {
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
       {notice ? <>
         <div className="modal-content information-content"><span className="info-symbol" aria-hidden="true">i</span><p>{notice}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>OK</button></div>
-      </> : danceOpen ? <SchoolDancePanel life={life} outcome={danceOutcome} onResolve={resolveDance} onRetry={()=>setDanceOutcome(null)} onClose={closeModal}/> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className={`result-reaction-track ${result.change<0?'reaction-negative':''}`} role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`}}/></div></div>}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
+      </> : modal === 'schedule' ? <SchedulePanel life={life} onClose={closeModal}/> : danceOpen ? <SchoolDancePanel life={life} outcome={danceOutcome} onResolve={resolveDance} onRetry={()=>setDanceOutcome(null)} onClose={closeModal}/> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className="result-reaction-track" role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`,background:barColor(result.meter.value)}}/></div></div>}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
         <div className="modal-content"><h2>Delete {deleteTarget?.name}'s life?</h2><p>This permanently deletes this saved life from this device. This cannot be undone.</p></div><div className="dialog-actions"><button className="classic-button" onClick={deleteCharacter} disabled={!deleteTarget}>Delete life</button><button className="classic-button" autoFocus onClick={closeModal}>Cancel</button></div>
       </> : modal === 'power' ? <>
         <div className="power-content"><h2>Turn off computer</h2><div className="power-options"><button onClick={() => saveCurrent(true)}><Icon kind="save"/><span>Save</span></button><button onClick={() => dirty ? setModal('quit') : turnOff()}><Icon kind="power"/><span>Turn off</span></button><button onClick={() => setModal('restart')}><Icon kind="restart"/><span>Restart</span></button></div><p>{dirty ? 'You have unsaved changes.' : 'Your current life is saved.'}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>Cancel</button></div>

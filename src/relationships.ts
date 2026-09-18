@@ -72,16 +72,17 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const amount=given ? Math.max(1,Math.round((2+wealth*1.8)*(.5+random()*.5))) : 0;
   const response=reaction(life,person,action,giftId);
   const accepted = person.strength >= 65;
-  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':response.delta,Befriend:5,'Ask for money':0,'Ask out':accepted ? 5 : -2,Compliment:response.delta,Conversation:response.delta,Gift:giftDelta,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
+  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':response.delta,Befriend:5,'Ask for money':given?0:-2,'Ask out':accepted ? 5 : -2,Compliment:response.delta,Conversation:response.delta,Gift:giftDelta,'Hook up':accepted ? 2 : -2,Insult:-12,'Spend time':5,Unfriend:0};
+  const subject=person.gender==='Female'?'she':'he',capital=person.gender==='Female'?'She':'He';
   const text: Record<RelationshipAction,string> = {
     'Act up':`I acted up around ${person.name}. It strained our relationship.`,
-    Disrespect:`I disrespected ${person.name}. They were disappointed in me.`,
+    Disrespect:`I disrespected ${person.name}. ${capital} was disappointed in me.`,
     'Suck up':`I tried to impress ${person.name}.`,
     Befriend:`I befriended ${person.name}.`,
-    'Ask for money':given ? `I asked my ${person.relation.toLowerCase()} for money. They gave me $${amount}.` : `I asked my ${person.relation.toLowerCase()} for money, but they declined.`,
-    'Ask out':accepted ? `I asked ${person.name} out. We are now dating.` : `I asked ${person.name} out, but they politely declined.`,
-    Compliment:response.text.replace(/^You /,'I ').replace(/your /g,'my '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked').replace(/your /g,'my '),Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?'They did not appreciate the gift.':'They appreciated the gift.'}` : `I gave ${person.name} a gift. They appreciated the thought.`,
-    'Hook up':accepted ? `I hooked up with ${person.name}.` : `I asked ${person.name} to hook up, but they declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
+    'Ask for money':given ? `I asked my ${person.relation.toLowerCase()} for money. ${capital} gave me $${amount}.` : `I asked my ${person.relation.toLowerCase()} for money, but ${subject} declined.`,
+    'Ask out':accepted ? `I asked ${person.name} out. We are now dating.` : `I asked ${person.name} out, but ${subject} politely declined.`,
+    Compliment:response.text.replace(/^You /,'I ').replace(/your /g,'my '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked').replace(/your /g,'my '),Gift:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${giftDelta<0?`${capital} did not appreciate the gift.`:`${capital} appreciated the gift.`}` : `I gave ${person.name} a gift. ${capital} appreciated the thought.`,
+    'Hook up':accepted ? `I hooked up with ${person.name}.` : `I asked ${person.name} to hook up, but ${subject} declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
