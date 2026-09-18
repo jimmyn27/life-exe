@@ -78,9 +78,90 @@ export const communityCollegePrograms: readonly CommunityCollegeProgram[] = [
   ...certificateMajorIds.map(majorId => ({id:`certificate-${majorId}`,institutionTypeId:'public-community-college' as const,credentialId:'certificate' as const,majorId,nominalYears:1,purpose:'employment' as const})),
 ];
 // Nursing is represented only by its major. No additional nursing program needed.
-export const trainingPrograms = [
-  { id:'medical-school',name:'Medical school',credentialId:'md',nominalYears:4,notes:'Undergraduate prerequisites, admission, residency and one national game license are separate.' },
-  { id:'law-school',name:'Law school',credentialId:'jd',nominalYears:3,notes:'Game route follows a bachelor’s degree and requires one national bar examination.' },
-] as const;
 export const educationFundingTypes = ['Household payment','Need-based grant','Merit scholarship','Federal student loan','Employer assistance'] as const;
 export const publicSchoolModel = { tuition:'Public K–12 schooling does not charge ordinary tuition; household supplies, transport and activities can cost money.', admission:'One national game enrollment model.', runtimeNote:'The existing 6/12/18 school transitions remain the national prototype model.' } as const;
+
+// Authored postgraduate routes. Any one listed bachelor major qualifies;
+// an empty requiredMajorIds list accepts any cataloged bachelor major.
+export const masterBachelorMajorIds = {
+ 'accounting-finance':['accounting-finance','economics','business'],
+ computing:['computing','information-technology','mathematics','engineering'],
+ engineering:['engineering'],
+ nursing:['nursing'],
+ biology:['biology','chemistry'],
+ psychology:['psychology','sociology'],
+ chemistry:['chemistry','biology'],
+ economics:['economics','accounting-finance','mathematics','business'],
+ 'political-science':['political-science','history','economics','sociology','philosophy'],
+ communications:['communications','journalism','marketing','literature'],
+ literature:['literature','communications','journalism'],
+ history:['history','political-science','anthropology','art-history'],
+ 'art-history':['art-history','history','fine-arts'],
+ 'graphic-design':['graphic-design','fine-arts'],
+ 'information-technology':['information-technology','computing','engineering'],
+ business:[],
+ journalism:['journalism','communications','literature','political-science','history'],
+ 'fine-arts':['fine-arts','graphic-design','art-history'],
+ music:['music'],
+ mathematics:['mathematics','engineering','computing'],
+ education:['education','psychology','sociology'],
+ marketing:['marketing','business','communications','psychology'],
+ anthropology:['anthropology','sociology','history'],
+ sociology:['sociology','anthropology','psychology','criminology'],
+ criminology:['criminology','sociology','psychology','political-science'],
+ philosophy:['philosophy','literature','history','political-science','theology'],
+ theology:['theology','philosophy','history'],
+ kinesiology:['kinesiology','biology','nursing'],
+ architecture:['architecture'],
+ 'human-resources':['human-resources','business','psychology','sociology'],
+ dance:['dance'],
+ hospitality:['hospitality','business','marketing']
+} as const satisfies Record<MajorId,readonly MajorId[]>;
+export type GraduateProgram = {
+ id:string;
+ name:string;
+ credentialId:'master'|'jd'|'md';
+ majorId:MajorId|null;
+ nominalYears:number;
+ institutionTypeIds:readonly ('public-university'|'private-college')[];
+ requiredCredentialId:'bachelor';
+ requiredMajorIds:readonly MajorId[];
+ preferredMajorIds:readonly MajorId[];
+ admissionNotes:string;
+};
+const graduateInstitutions = ['public-university','private-college'] as const;
+export const masterPrograms:readonly GraduateProgram[] = majors.map(major=>({
+ id:`master-${major.id}`,
+ name:major.id==='business'?'Master of Business Administration (MBA)':`Master’s degree in ${major.name}`,
+ credentialId:'master',majorId:major.id,nominalYears:2,
+ institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',
+ requiredMajorIds:masterBachelorMajorIds[major.id],
+ preferredMajorIds:major.id==='business'?['business','accounting-finance','economics','marketing','human-resources']:[],
+ admissionNotes:'Authored national game route. Academic results and program admission are separate future checks. This credential does not award a professional license.'
+}));
+export const professionalDegreePrograms:readonly GraduateProgram[] = [
+ {id:'law-school',name:'Juris Doctor',credentialId:'jd',majorId:null,nominalYears:3,institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',requiredMajorIds:[],preferredMajorIds:[],admissionNotes:'Any bachelor major. Academic results and law-school admission testing are separate future checks. A national bar examination is required for legal practice; the degree does not grant a license.'},
+ {id:'medical-school',name:'Medical degree',credentialId:'md',majorId:null,nominalYears:4,institutionTypeIds:graduateInstitutions,requiredCredentialId:'bachelor',requiredMajorIds:[],preferredMajorIds:[],admissionNotes:'Any bachelor major. Premedical science coursework, academic results and medical-school admission testing are separate future checks. Residency and a national medical license are separate from the degree.'}
+];
+export const graduatePrograms:readonly GraduateProgram[] = [...masterPrograms,...professionalDegreePrograms];
+export type GraduateApplicantAward = {credentialId:string;majorId?:string};
+export function graduateEducationFit(programId:string,awards:readonly GraduateApplicantAward[]) {
+ const program=graduatePrograms.find(item=>item.id===programId);
+ if(!program) throw new Error('Unknown graduate program.');
+ const bachelors=awards.filter(award=>award.credentialId==='bachelor' && majors.some(major=>major.id===award.majorId));
+ return {
+  meetsEducationRequirement:bachelors.some(award=>!program.requiredMajorIds.length || program.requiredMajorIds.includes(award.majorId as MajorId)),
+  hasPreferredMajor:bachelors.some(award=>program.preferredMajorIds.includes(award.majorId as MajorId))
+ };
+}
+// This checks completed education only, not full admission or professional licensing.
+export function meetsGraduateEducation(programId:string,awards:readonly GraduateApplicantAward[]):boolean {
+ return graduateEducationFit(programId,awards).meetsEducationRequirement;
+}
+
+// Preserve existing program IDs/names while sharing authoritative admission data.
+export const trainingPrograms = professionalDegreePrograms.map(program=>({
+ ...program,
+ name:program.credentialId==='md'?'Medical school':'Law school',
+ notes:program.admissionNotes
+}));

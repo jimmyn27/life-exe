@@ -55,3 +55,54 @@ Social Work was changed to Social Services (case worker, senior case worker, sup
 Architecture, Human Resources, Music Performance and Dance Performance were added with three positions each. Pay ranges remain national authored game values. A Criminology major alone does not award a Juris Doctor or a law license; biology/chemistry do not award a medical degree. A nursing major replaces the separate nursing programs in the game.
 
 Some majors currently have no exclusive career path. They can still support preferred qualifications, future activities and later career expansion; the catalog does not promise a dedicated job for every subject.
+
+
+## Postgraduate education routes
+
+These are authored national game admission routes, not a claim that real universities share identical requirements. All 32 existing majors have a two-year master’s program. Each requires a completed bachelor’s degree in any one subject in its required list. Credentials and subjects must occur on the same completed award. A certificate or associate degree cannot supplement an unrelated bachelor’s to pass a subject restriction. Multiple bachelor’s degrees may supply an eligible award.
+
+| Master’s subject | Accepted bachelor’s majors (any one) |
+| --- | --- |
+| Accounting and Finance | Accounting and Finance, Economics, Business Administration |
+| Computer Science | Computer Science, Information Technology, Mathematics, Engineering |
+| Engineering | Engineering |
+| Nursing | Nursing |
+| Biology | Biology, Chemistry |
+| Psychology | Psychology, Sociology |
+| Chemistry | Chemistry, Biology |
+| Economics | Economics, Accounting and Finance, Mathematics, Business Administration |
+| Political Science | Political Science, History, Economics, Sociology, Philosophy |
+| Communications | Communications, Journalism, Marketing, Literature |
+| Literature | Literature, Communications, Journalism |
+| History | History, Political Science, Anthropology, Art History |
+| Art History | Art History, History, Fine Arts |
+| Graphic Design | Graphic Design, Fine Arts |
+| Information Technology | Information Technology, Computer Science, Engineering |
+| Business Administration | Any bachelor’s major |
+| Journalism | Journalism, Communications, Literature, Political Science, History |
+| Fine Arts | Fine Arts, Graphic Design, Art History |
+| Music | Music |
+| Mathematics | Mathematics, Engineering, Computer Science |
+| Education | Education, Psychology, Sociology |
+| Marketing | Marketing, Business Administration, Communications, Psychology |
+| Anthropology | Anthropology, Sociology, History |
+| Sociology | Sociology, Anthropology, Psychology, Criminology |
+| Criminology | Criminology, Sociology, Psychology, Political Science |
+| Philosophy | Philosophy, Literature, History, Political Science, Theology |
+| Theology | Theology, Philosophy, History |
+| Kinesiology | Kinesiology, Biology, Nursing |
+| Architecture | Architecture |
+| Human Resources | Human Resources, Business Administration, Psychology, Sociology |
+| Dance | Dance |
+| Hospitality | Hospitality, Business Administration, Marketing |
+
+Business Administration is labeled Master of Business Administration (MBA). Business Administration, Accounting and Finance, Economics, Marketing and Human Resources are optional preferred backgrounds for this authored MBA route; other bachelor’s majors remain eligible. Master’s Nursing, Engineering and Architecture require their matching bachelor’s major in this simplified model. No master’s degree grants a professional license or substitutes for a JD/medical degree.
+
+| Professional program | Credential | Length after bachelor’s | Bachelor’s subject requirement | Other requirements reserved for future admission/practice systems |
+| --- | --- | --- | --- | --- |
+| Law school | Juris Doctor | 3 years | Any major | Academic results and admission testing; national bar examination before legal practice |
+| Medical school | Medical degree | 4 years | Any major | Premedical science coursework, academic results and admission testing; residency and national medical license |
+
+JD and medical programs do not add undergraduate majors called Law or Medicine. Professional admission has no preferred undergraduate major in this catalog; existing career preferences remain separate hiring metadata. The ABA describes many valid undergraduate backgrounds for law school (https://www.americanbar.org/groups/legal_education/resources/law-students/pre-law/). The AAMC explains that medical schools do not require or prefer a specific major, while prerequisite coursework varies by school (https://students-residents.aamc.org/applying-medical-school/how-choose-best-premed-major). Science-course prerequisites remain separate from choosing a Biology or Chemistry major.
+
+`graduatePrograms` contains 34 routes; `graduateEducationFit` and `meetsGraduateEducation` check completed education only. Tuition, grades, admissions scores, coursework tracking, enrollment, degree completion and licensing are not applied during Age Up by this catalog change. Existing `trainingPrograms` IDs remain compatible.

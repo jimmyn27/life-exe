@@ -44,3 +44,6 @@ Salary/hourly ranges, nominal career progression and name pools are authored gam
 The new-character selector, demo location, money displays, job previews and major previews use these catalogs. Job applications, hiring, tuition, annual pay, tax collection, pensions and benefit payments remain future simulation work; catalogs alone do not apply them during Age Up. Name pools and other life content are prepared for future generation.
 
 New US characters save a city ID and ruleset ID; state is looked up behind the scenes. Recognized legacy US location strings are upgraded on load. Unsupported older locations and their histories are preserved instead of silently relocating characters. Existing numeric balances are preserved as game amounts; there is no currency-conversion system.
+
+
+Postgraduate catalog: all 32 majors now have authored two-year master’s routes with explicit bachelor’s subject alternatives. Law school (JD, three years) and medical school (medical degree, four years) accept any bachelor’s subject; admission and professional licensing checks remain separate. See `graduatePrograms` in `education.ts` and the postgraduate tables in `CAREER_EDUCATION.md`. These routes are catalog/helper definitions, not annual simulation integration.
