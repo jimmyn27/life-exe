@@ -67,3 +67,20 @@ test('legacy named school friends upgrade to persistent profiles on load',()=>{
  const raw=JSON.stringify(upsertLife(emptyStore(),current));const loaded=loadStore({getItem:key=>key===SAVE_KEY?raw:null,setItem:()=>{}}).lives[0];
  assert.ok(characters(loaded).personal.some(person=>person.id==='oliver-patel' && person.name==='Oliver Patel'));assert.equal(loaded.relationships['oliver-patel'].friendship,true);saved(loaded);
 });
+
+test('school staff actions change on befriending and survive saved contact profiles',()=>{
+ const current=life(12),teacher=characters(current).school.find(p=>p.relation==='Teacher');
+ assert.deepEqual(availableActions(teacher,current),['Act up','Befriend','Compliment','Conversation','Gift','Disrespect','Insult','Suck up']);
+ for(const action of ['Act up','Disrespect','Suck up']){
+  const changed=interact(current,teacher.id,action);assert.notEqual(changed,current);assert.match(changed.log.at(-1).text,new RegExp(teacher.name));
+  assert.deepEqual(saved(changed).relationships,changed.relationships);
+  const repeated=interact(changed,teacher.id,action);assert.equal(repeated.relationships[teacher.id].strength,changed.relationships[teacher.id].strength);
+ }
+ const friends=saved(interact(current,teacher.id,'Befriend'));
+ const personalTeacher=characters(friends).personal.find(p=>p.id===teacher.id);
+ assert.deepEqual(availableActions(personalTeacher,friends),['Act up','Compliment','Conversation','Gift','Insult','Spend time','Unfriend']);
+ assert.equal(interact(friends,teacher.id,'Disrespect'),friends);
+ const removed=interact(friends,teacher.id,'Unfriend');assert.ok(availableActions(characters(removed).school.find(p=>p.id===teacher.id),removed).includes('Befriend'));
+ const peer=characters(current).school.find(p=>p.relation==='Classmate');assert.ok(availableActions(peer,current).includes('Gift'));
+ assert.equal(interact(current,peer.id,'Gift').balance,current.balance-25);
+});

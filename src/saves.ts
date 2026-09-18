@@ -57,7 +57,7 @@ function validLife(value: unknown): value is Life {
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
       if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
-      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Befriend','Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
       if(record.friendship!==undefined && typeof record.friendship!=='boolean')return false;
       const friendProfile=record.profile;
       if(friendProfile!==undefined && (!object(friendProfile) || !['name','gender','education','occupation'].every(key=>typeof friendProfile[key]==='string') || !Number.isInteger(friendProfile.ageOffset) || (friendProfile.ageOffset as number)<0 || (friendProfile.ageOffset as number)>100))return false;

@@ -149,7 +149,7 @@
 .messenger-wordmark{margin-left:auto;align-self:flex-start;font-style:italic;font-size:10px;color:#7c9cbd}
 .messenger-body{background:#fff;flex:1;min-height:0;overflow:auto;padding:14px 12px;display:flex;flex-direction:column}
 .contacts-heading{font-weight:bold;color:#4a759e;font-size:12px;padding-bottom:15px}
-.contact-group h3{font-size:11px;font-weight:normal;color:#5c6c7e;padding:7px 0;border-bottom:1px solid #e4eaf2}
+.contact-group summary{font-size:11px;font-weight:normal;color:#5c6c7e;padding:7px 0;border-bottom:1px solid #e4eaf2;cursor:pointer}
 .contact-row{display:flex;gap:8px;align-items:center;padding:10px 5px;width:100%;background:none;border:0;text-align:left}
 .contact-row:hover{background:#edf4fd}
 .contact-row .xp-icon{width:25px;height:25px}
