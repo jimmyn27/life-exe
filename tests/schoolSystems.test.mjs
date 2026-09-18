@@ -1,3 +1,4 @@
+import {scheduleHours} from '../src/schoolCommitments.ts';
 import {personAddress} from '../src/personAddress.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -49,7 +50,7 @@ test('acquaintances must be befriended before unfriending; friends persist when 
 test('clubs and sports have persisted random decisions with one attempt per year and memberships carry until school changes',()=>{
  assert.ok(schoolActivities.some(a=>a.group==='Clubs') && schoolActivities.some(a=>a.group==='Sports'));
  assert.strictEqual(applySchoolActivity(life(11),'chess').age,11);assert.strictEqual(applySchoolActivity(life(18),'chess').age,18);
- let current=life(12);for(const activity of schoolActivities){const next=applySchoolActivity(current,activity.id);assert.notStrictEqual(next,current);assert.deepEqual(applySchoolActivity(current,activity.id),next);assert.strictEqual(applySchoolActivity(next,activity.id),next);current=next;}
+ let current=life(12);for(const activity of schoolActivities){const next=applySchoolActivity(current,activity.id);if(scheduleHours(current)+5>60){assert.strictEqual(next,current);continue;}assert.notStrictEqual(next,current);assert.deepEqual(applySchoolActivity(current,activity.id),next);assert.strictEqual(applySchoolActivity(next,activity.id),next);current=next;}
  const loaded=saved(current);assert.deepEqual(loaded.occupation.school.activityAttempts,current.occupation.school.activityAttempts);const enrolled=current.occupation.school.memberships;assert.ok(enrolled.length>0);
  const next=answer(advanceYear(loaded));assert.ok(next.occupation.school.memberships.every(id=>enrolled.includes(id)));assert.deepEqual(next.occupation.school.activityAttempts,{});
  current={...loaded,age:13};current=answer(advanceYear(current));assert.deepEqual(current.occupation.school.memberships,[]);assert.equal(current.occupation.school.activityAttempts,undefined);

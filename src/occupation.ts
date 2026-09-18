@@ -5,7 +5,7 @@ import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
 
 export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; activityDetails?:Record<string,import('./schoolCommitments').Membership>; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean}> };
-export type Job = { id?:string;hourlyWage?:number;weeklyHours?:number; position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
+export type Job = { actionAge?:number;usedActions?:import('./partTimeWork').WorkAction[];id?:string;hourlyWage?:number;weeklyHours?:number; position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
 export type Occupation = { highestEducation: 'None' | 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; school: School | null; job: Job | null; droppedOut?:boolean };
 export const university = (age: number): School => ({ name: 'Northbridge University', level: 'University', startAge: age, duration: 4, grades: 78, popularity: 64 });
 export const libraryJob = (age: number): Job => ({ position: 'Library assistant', employer: 'Riverside Library', salary: 32000, performance: 72, startAge: age, hours: 'Full time · 35 hours / week' });
@@ -61,6 +61,7 @@ const clamp = (value: number) => Math.max(0,Math.min(100,value));
 function initialGrades(life: Life) { return clamp(life.stats.Smarts); }
 export type SchoolAction = 'Study harder' | 'Study hard' | 'Join an activity' | 'Change schools' | 'Drop out' | 'Nurse' | 'Skip school' | 'School dance';
 export const schoolActions=(age:number):SchoolAction[]=>age<10?['Change schools','Drop out','Nurse','Study harder']:age<14?['Change schools','Drop out','Nurse','Skip school','Study harder']:['Change schools','Nurse','School dance','Drop out','Skip school','Study harder'];
+export const nextSchoolName=(life:Life,school:School)=>`${['Pinecrest','Riverside','Oakridge','Cedar Grove'][(school.transfers??0)%4]} ${schoolStage(life,school)}`;
 export function schoolStage(life: Life, school: School): string { return school.level === 'University' ? 'University' : life.age < 10 ? 'Elementary school' : life.age < 14 ? 'Middle school' : 'High school'; }
 export function schoolName(_life: Life, school: School): string { return school.name; }
 export function schoolAction(life: Life, requested: SchoolAction): Life {
@@ -78,7 +79,7 @@ export function schoolAction(life: Life, requested: SchoolAction): Life {
  if(action==='Change schools'){
   const parents=life.family?.parents??[];const relationship=parents.length?parents.reduce((sum,p)=>sum+(life.relationships?.[p.id]?.strength??(p.relation==='Mother'?86:79)),0)/parents.length:70;
   const allowed=random()<Math.min(.95,.1+relationship/150+familyMoney(life.family)/400);
-  if(allowed){const serial=(school.transfers??0)+1;nextSchool.transfers=serial;const names=['Pinecrest','Riverside','Oakridge','Cedar Grove'];nextSchool.name=`${names[(serial-1)%names.length]} ${schoolStage(life,school)}`;nextSchool.roster=initialSchoolRoster(`${life.id}:transfer:${serial}`,life.age,life.stats.Looks).map(p=>advanceClassmate({...p,id:`transfer-${serial}-${p.id}`,gradeAge:undefined},life.id,life.age,true));nextSchool.memberships=[];nextSchool.activityDetails={};nextSchool.activityAttempts={};text=`My parents agreed to change schools. I enrolled at ${nextSchool.name}.`;}
+  if(allowed){const serial=(school.transfers??0)+1;nextSchool.transfers=serial;nextSchool.name=nextSchoolName(life,school);nextSchool.roster=initialSchoolRoster(`${life.id}:transfer:${serial}`,life.age,life.stats.Looks).map(p=>advanceClassmate({...p,id:`transfer-${serial}-${p.id}`,gradeAge:undefined},life.id,life.age,true));nextSchool.memberships=[];nextSchool.activityDetails={};nextSchool.activityAttempts={};text=`My parents agreed to change schools. I enrolled at ${nextSchool.name}.`;}
   else text='My parents declined my request to change schools.';
  }
  if(nextOccupation.school)nextOccupation.school.popularity=schoolPopularity(life,nextOccupation.school);

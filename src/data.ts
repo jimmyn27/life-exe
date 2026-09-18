@@ -1,7 +1,7 @@
 export type Stats = { Health: number; Happiness: number; Smarts: number; Looks: number };
 export type Entry = { age: number; tag: string; text: string };
 export type Choice = { label: string; hint: string; disabled?: boolean; outcome: string; effect?: Partial<Stats>; jobDecision?:{id:string}; friendshipDecision?:{id:string;salvage:boolean}; membershipAction?:{id:string;action:import('./schoolCommitments').MembershipAction}; schoolAction?: import('./occupation').SchoolAction; schoolEffect?: { grades?: number; popularity?: number }; relationship?: { id: string; action: import('./relationships').RelationshipAction; giftId?: string;invited?:boolean } };
-export type LifeEvent = { category: string; title: string; text: string; choices: Choice[] };
+export type LifeEvent = { profileId?:string; category: string; title: string; text: string; choices: Choice[] };
 export const initialStats: Stats = { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 };
 export const events: LifeEvent[] = [
   { category: 'Social event', title: 'An unexpected invitation', text: 'Your friend Maya invites you on a weekend camping trip. You have been meaning to spend more time together. How will you respond?', choices: [

@@ -60,7 +60,7 @@ function validLife(value: unknown): value is Life {
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
       if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
-      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Befriend','Ask for money','Ask out','Compliment','Conversation','Flirt','Gift','Hook up','Have fun','Make love','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Act up','Disrespect','Suck up','Break up','Befriend','Ask for money','Ask out','Compliment','Conversation','Flirt','Gift','Hook up','Have fun','Make love','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
       if(record.friendship!==undefined && typeof record.friendship!=='boolean')return false;
       const friendProfile=record.profile;
       if(friendProfile!==undefined && (!object(friendProfile) || !['name','gender','education','occupation'].every(key=>typeof friendProfile[key]==='string') || !Number.isInteger(friendProfile.ageOffset) || (friendProfile.ageOffset as number)<0 || (friendProfile.ageOffset as number)>100))return false;
@@ -76,6 +76,7 @@ function validLife(value: unknown): value is Life {
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
     if(object(job) && (job.id!==undefined && typeof job.id!=='string' || (job.hourlyWage===undefined)!==(job.weeklyHours===undefined) || job.hourlyWage!==undefined && (typeof job.hourlyWage!=='number' || !Number.isFinite(job.hourlyWage) || job.hourlyWage<=0 || !Number.isInteger(job.weeklyHours) || (job.weeklyHours as number)<10 || (job.weeklyHours as number)>20)))return false;
+    if(object(job) && (job.actionAge!==undefined && (!Number.isInteger(job.actionAge)||(job.actionAge as number)<0||(job.actionAge as number)>(value.age as number)) || job.usedActions!==undefined && (!Array.isArray(job.usedActions)||!job.usedActions.every(a=>['Hours','Raise','Resign','Work harder'].includes(a as string)))))return false;
     const school = occupation.school;
     if(occupation.droppedOut!==undefined && typeof occupation.droppedOut!=='boolean')return false;
     if(object(occupation.school) && (occupation.school.transfers!==undefined && (!Number.isInteger(occupation.school.transfers) || (occupation.school.transfers as number)<0) || occupation.school.danceAskedIds!==undefined && (!Array.isArray(occupation.school.danceAskedIds) || !occupation.school.danceAskedIds.every(id=>typeof id==='string'))))return false;

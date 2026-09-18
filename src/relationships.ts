@@ -10,7 +10,7 @@ import type { Life } from './saves';
 import type { Stats } from './data';
 import { getOccupation, schoolPopularity, occupationContacts, schoolName, type Contact } from './occupation.ts';
 
-export const relationshipActions = ['Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Insult', 'Have fun', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
+export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Insult', 'Have fun', 'Hook up', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
 export type RelationshipAction = typeof relationshipActions[number];
 export type RelationshipRecord = { strength: number; status: 'acquaintance' | 'friend' | 'dating' | 'unfriended'; stats: Stats; friendship?: boolean; profile?: {name:string;gender:string;ageOffset:number;education:string;occupation:string}; usedAge?: number; usedActions?: RelationshipAction[] };
 export type Person = Contact & { grades?:number;popularity?:number;extracurriculars?:string[];sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
@@ -48,13 +48,13 @@ export function availableActions(person: Person, life?: Life): RelationshipActio
   return [...(person.parent?['Ask for money' as const]:[]),'Compliment','Conversation',...(person.parent?['Gift' as const]:[]),'Insult','Spend time'];
  }
  if(['Teacher','Principal','Professor'].includes(person.relation) || /\b(teacher|principal|professor)\b/i.test(person.occupation)) return person.friendship ? ['Act up','Compliment','Conversation','Gift','Insult','Spend time','Unfriend'] : ['Act up','Befriend','Compliment','Conversation','Gift','Disrespect','Insult','Suck up'];
- return relationshipActions.filter(action=>!['Act up','Disrespect','Suck up'].includes(action) && action!=='Ask for money' && (action!=='Make love' || person.status==='dating')  && (action!=='Befriend' || !person.friendship) && (action!=='Unfriend' || person.friendship));
+ return relationshipActions.filter(action=>!['Act up','Disrespect','Suck up'].includes(action) && action!=='Ask for money' && (action!=='Break up'||person.status==='dating') && (action!=='Flirt'||person.status!=='dating') && (action!=='Spend time'||person.friendship||person.status==='dating') && (action!=='Make love' || person.status==='dating')  && (action!=='Befriend' || !person.friendship && person.status!=='dating') && (action!=='Unfriend' || person.friendship && person.status!=='dating'));
 }
 export function actionUnavailable(life: Life, person: Person, action: RelationshipAction): string | null {
   if (!availableActions(person,life).includes(action)) return 'This action is not available with this person.';
   if(['Ask out','Flirt'].includes(action) && (life.age<10 || person.age<10 || (life.age<18)!==(person.age<18)))return 'Dating is available from age 10, between peers or between adults.';
-  if(action==='Have fun' && (life.age<16 || person.age<16 || (life.age<18)!==(person.age<18)))return 'Nonsexual outings are available from age 16 with peers, or between adults.';
-  if (action==='Make love' && (life.age < 18 || person.age < 18)) return 'Available when both characters are adults (18+).';
+  if(action==='Have fun' && (life.age<16 || person.age<16 || life.age>=18 || person.age>=18))return 'Nonsexual outings are available for peers aged 16–17.';
+  if (['Hook up','Make love'].includes(action) && (life.age < 18 || person.age < 18)) return 'Available when both characters are adults (18+).';
   if (action === 'Ask for money' && life.relationships?.[person.id]?.usedAge === life.age && life.relationships[person.id].usedActions?.includes(action)) return 'You already asked this parent for money this year.';
   if (action === 'Ask out' && person.status === 'dating') return 'You are already dating.';
   if (action === 'Ask out' && Object.entries(life.relationships ?? {}).some(([id, record]) => id !== person.id && record.status === 'dating')) return 'You are already in a relationship.';
@@ -78,10 +78,12 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const amount=given ? Math.max(1,Math.round((2+wealth*1.8)*(.5+random()*.5))) : 0;
   const response=reaction(life,person,action,giftId);
   const romance=romanceOutcome(life,person,action);
-  const accepted=invited && ['Ask out','Have fun'].includes(action)?true:['Have fun','Make love'].includes(action)?romance.accepted:person.strength>=65 && (action!=='Ask out'||romance.compatible);
-  const deltas: Record<RelationshipAction,number> = {'Act up':-8,Disrespect:-10,'Suck up':response.delta,Befriend:5,Flirt:response.delta,'Ask for money':given?0:-2,'Ask out':accepted ? 5 : -2,Compliment:response.delta,Conversation:response.delta,Gift:giftDelta,'Have fun':accepted?1+Math.floor(romance.theirEnjoyment/20):-2,'Make love':accepted?1+Math.floor(romance.theirEnjoyment/20):-2,Insult:-12,'Spend time':5,Unfriend:0};
+  const accepted=invited && ['Ask out','Have fun'].includes(action)?true:['Have fun','Hook up','Make love'].includes(action)?romance.accepted:person.strength>=65 && (action!=='Ask out'||romance.compatible);
+  const deltas: Record<RelationshipAction,number> = {'Break up':-5,'Hook up':accepted?1+Math.floor(romance.theirEnjoyment/20):-2,'Act up':-8,Disrespect:-10,'Suck up':response.delta,Befriend:5,Flirt:response.delta,'Ask for money':given?0:-2,'Ask out':accepted ? 5 : -2,Compliment:response.delta,Conversation:response.delta,Gift:giftDelta,'Have fun':accepted?1+Math.floor(romance.theirEnjoyment/20):-2,'Make love':accepted?1+Math.floor(romance.theirEnjoyment/20):-2,Insult:-12,'Spend time':5,Unfriend:0};
   const subject=person.gender==='Female'?'she':'he',capital=person.gender==='Female'?'She':'He';
   const text: Record<RelationshipAction,string> = {
+    'Break up':`I broke up with ${person.name}.`,
+    'Hook up':accepted?`I hooked up with ${person.name}.`:`I asked ${person.name} to hook up, but ${subject} declined.`,
     'Act up':`I acted up around ${person.name}. It strained our relationship.`,
     Disrespect:`I disrespected ${person.name}. ${capital} was disappointed in me.`,
     'Suck up':`I tried to impress ${person.name}.`,
@@ -94,14 +96,16 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
     'Have fun':accepted ? `I had fun with ${person.name}. We went bowling, played arcade games, and enjoyed an afternoon together.` : `I invited ${person.name} for an afternoon of games, but ${subject} declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We had a lovely conversation.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
-  const status = action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
-  const happiness = first && ['Have fun','Make love'].includes(action)?accepted?Math.round((romance.yourEnjoyment-40)/10):-2:!first || action==='Ask for money' ? 0 : ['Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation','Suck up','Flirt'].includes(action) && response.delta<0 ? -3 : ['Ask out','Have fun'].includes(action) && !accepted ? -1 : 2;
+  const status = action==='Break up'?(person.friendship?'friend':'acquaintance'):action==='Befriend' ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
+  const happiness = first && ['Have fun','Hook up','Make love'].includes(action)?accepted?Math.round((romance.yourEnjoyment-40)/10):-2:!first || action==='Ask for money' ? 0 : ['Break up','Act up','Disrespect','Insult','Unfriend'].includes(action) || ['Gift','Compliment','Conversation','Suck up','Flirt'].includes(action) && response.delta<0 ? -3 : ['Ask out','Have fun'].includes(action) && !accepted ? -1 : 2;
   const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],strength:action === 'Unfriend' ? 0 : Math.max(0,Math.min(100,person.strength+(first?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+happiness))}};
   const occupation=getOccupation(life);
   const school=occupation.school;
   const staff=school?.roster?.some(p=>p.id===id && ['Teacher','Principal','Professor'].includes(p.relation));
   const gradeGain=first && staff && ['Compliment','Conversation','Suck up'].includes(action)?Math.max(0,Math.ceil(response.delta/2)):0;
-  const next:Life={...life,...(school?{occupation:{...occupation,school:{...school,grades:Math.min(100,school.grades+gradeGain)}}}:{}),balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action].split(person.name).join(personAddress(person,'first'))}]};
+  const manager=groups.work.some(p=>p.id===id && p.relation==='Manager');
+  const performanceGain=first && manager && ['Compliment','Conversation','Gift'].includes(action)?Math.max(0,Math.ceil(response.delta/2)):0;
+  const next:Life={...life,...(school||occupation.job?{occupation:{...occupation,...(school?{school:{...school,grades:Math.min(100,school.grades+gradeGain)}}:{}),...(occupation.job?{job:{...occupation.job,performance:Math.min(100,occupation.job.performance+performanceGain)}}:{})}}:{}),balance:life.balance+amount-(action === 'Gift' ? gift?.price??25 : 0),stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+happiness))},relationships:{...life.relationships,[id]:record},log:[...life.log,{age:life.age,tag:'SOCIAL',text:text[action].split(person.name).join(personAddress(person,'first'))}]};
   if(first && staff && action==='Suck up'){
     for(const classmate of groups.school.filter(p=>p.relation==='Classmate')){const existing=next.relationships?.[classmate.id];next.relationships![classmate.id]={...existing,strength:Math.max(0,classmate.strength-1),status:classmate.status,friendship:classmate.friendship,stats:{...classmate.stats}};}
   }

@@ -2,11 +2,12 @@ import {getOccupation} from './occupation.ts';
 import {seededRandom} from './family.ts';
 import type {Life} from './saves';
 import {schoolActivities,schoolActivityName} from './schoolActivityCatalog.ts';
-import {membershipInfo,newMembership,type MembershipAction} from './schoolCommitments.ts';
+import {membershipInfo,newMembership,scheduleHours,scheduleLimit,type MembershipAction} from './schoolCommitments.ts';
 export {schoolActivities,schoolActivityName} from './schoolActivityCatalog.ts';
 export function applySchoolActivity(life:Life,id:string):Life{
  const occupation=getOccupation(life),school=occupation.school,activity=schoolActivities.find(item=>item.id===id);
  if(life.pendingEvent || !school || life.age<10 || life.age>=18 || !activity || school.memberships?.includes(id) || school.activityAttempts?.[id]?.age===life.age)return life;
+ if(scheduleHours(life)+5>scheduleLimit)return life;
  const accepted=seededRandom(`${life.id}:activity:${school.startAge}:${life.age}:${id}`)()<(activity.group==='Clubs'?.7:.5);
  return {...life,stats:{...life.stats,Happiness:Math.max(0,Math.min(100,life.stats.Happiness+(accepted?4:-3)))},occupation:{...occupation,school:{...school,activityAttempts:{...school.activityAttempts,[id]:{age:life.age,accepted}},...(accepted?{activityDetails:{...school.activityDetails,[id]:newMembership(life.age)}}:{}),memberships:accepted?[...(school.memberships??[]),id]:school.memberships??[]}},log:[...life.log,{age:life.age,tag:'EDUCATION',text:accepted?`I ${activity.group==='Clubs'?'was accepted into':'made'} the ${schoolActivityName(activity,life.family?.gender)}.`:`I ${activity.group==='Clubs'?'applied to':'tried out for'} the ${schoolActivityName(activity,life.family?.gender)}, but did not get in.`}]};
 }

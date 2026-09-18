@@ -1,14 +1,14 @@
 import {personAddress} from '../src/personAddress.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {characters,interact,availableActions} from '../src/relationships.ts';
+import {characters,interact,availableActions,actionUnavailable} from '../src/relationships.ts';
 import {interactionResult} from '../src/interactionResults.ts';
 const life=id=>({id,name:'Sam Smith',city:'New York City',age:18,birthYear:2000,balance:1000,stats:{Health:90,Happiness:80,Smarts:70,Looks:60},log:[]});
 test('only compliments, conversations and gifts have reaction meters; all valid actions have outcome text',()=>{
  const current=life('response-bars'),people=characters(current),friend=people.personal.find(p=>p.id==='maya-chen');
  for(const person of [friend,people.personal[0],characters({...current,age:12}).school.find(p=>p.relation==='Teacher')]){
   const before=person.relation==='Teacher'?{...current,age:12}:current;
-  for(const action of availableActions(person,before)){
+  for(const action of availableActions(person,before).filter(action=>!actionUnavailable(before,person,action))){
    const after=interact(before,person.id,action,action==='Gift'?'flowers':undefined);assert.notEqual(after,before);
    const result=interactionResult(before,after,person,action,action==='Gift'?'flowers':undefined);
    assert.equal(Boolean(result.meter),['Compliment','Conversation','Gift','Suck up','Flirt'].includes(action));assert.match(result.text,/^You/);assert.ok(result.text.includes(personAddress(person)) || action==='Ask for money');
