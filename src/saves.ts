@@ -1,4 +1,4 @@
-import type { Family } from './family';
+import { resetFamily, birthIntroduction, type Family } from './family.ts';
 import type { Entry, Stats, LifeEvent } from './data';
 import type { LifeMail, PendingLifeEvent } from './mail';
 import type { RelationshipRecord } from './relationships';
@@ -32,8 +32,19 @@ function validLife(value: unknown): value is Life {
   if (value.family !== undefined) {
     const family = value.family;
     const validStats = (item: unknown) => object(item) && statNames.every(key => typeof item[key] === 'number' && Number.isFinite(item[key]) && (item[key] as number) >= 0 && (item[key] as number) <= 100);
-    if (!object(family) || !validStats(family.birthStats) || !Array.isArray(family.parents) || family.parents.length !== 2) return false;
-    if (!family.parents.every((parent, index) => object(parent) && parent.id === (index === 0 ? 'parent-mother' : 'parent-father') && parent.relation === (index === 0 ? 'Mother' : 'Father') && parent.gender === (index === 0 ? 'Female' : 'Male') && ['name','education','occupation'].every(key => typeof parent[key] === 'string' && !!(parent[key] as string).trim()) && Number.isInteger(parent.ageAtBirth) && (parent.ageAtBirth as number) >= 18 && (parent.ageAtBirth as number) <= 60 && validStats(parent.stats))) return false;
+    if (!object(family) || !validStats(family.birthStats) || !Array.isArray(family.parents) || (family.parents.length < 1 || family.parents.length > 2)) return false;
+    if (family.money !== undefined && (typeof family.money !== 'number' || !Number.isFinite(family.money) || family.money < 0 || family.money > 100)) return false;
+    const validSiblings = (items: unknown) => Array.isArray(items) && items.every(item => object(item) && typeof item.id === 'string' && typeof item.name === 'string' && ['Male','Female'].includes(item.gender as string) && Number.isInteger(item.birthAge) && (item.birthAge as number) >= -60 && (item.birthAge as number) <= (value.age as number) && validStats(item.stats));
+    if (family.siblings !== undefined && !validSiblings(family.siblings)) return false;
+    if (family.origin !== undefined && (!object(family.origin) || !Array.isArray(family.origin.parents) || typeof family.origin.money !== 'number' || !Number.isFinite(family.origin.money) || family.origin.money < 0 || family.origin.money > 100 || !validSiblings(family.origin.siblings))) return false;
+    const validParents = (items: unknown): boolean => Array.isArray(items) && items.length >= 1 && items.length <= 2 && items.every((parent,index) => object(parent) && parent.id === (index === 0 ? 'parent-mother' : 'parent-father') && parent.relation === (index === 0 ? 'Mother' : 'Father') && parent.gender === (index === 0 ? 'Female' : 'Male') && ['name','education','occupation'].every(key => typeof parent[key] === 'string' && !!(parent[key] as string).trim()) && Number.isInteger(parent.ageAtBirth) && (parent.ageAtBirth as number) >= 18 && (parent.ageAtBirth as number) <= 60 && validStats(parent.stats));
+    if (!validParents(family.parents) || family.origin !== undefined && !validParents((family.origin as Record<string,unknown>).parents)) return false;
+    for (const parent of [...family.parents,...(object(family.origin) && Array.isArray(family.origin.parents) ? family.origin.parents : [])]) {
+      if (parent.career !== undefined && (!Number.isInteger(parent.career) || parent.career < 0 || parent.career > 4)) return false;
+      if (parent.rank !== undefined && (!Number.isInteger(parent.rank) || parent.rank < 0 || parent.rank > 2)) return false;
+      if (parent.yearsInPosition !== undefined && (!Number.isInteger(parent.yearsInPosition) || parent.yearsInPosition < 0)) return false;
+    }
+    if (family.gender !== undefined && !['Male','Female'].includes(family.gender as string) || family.planned !== undefined && typeof family.planned !== 'boolean') return false;
   }
   if (value.social !== undefined) {
     const social = value.social;
@@ -45,6 +56,8 @@ function validLife(value: unknown): value is Life {
     if (!object(value.relationships) || Array.isArray(value.relationships)) return false;
     for (const [id, record] of Object.entries(value.relationships)) {
       if (!object(record)) return false;
+      if (record.usedAge !== undefined && (!Number.isInteger(record.usedAge) || (record.usedAge as number) > (value.age as number) || (record.usedAge as number) < 0)) return false;
+      if (record.usedActions !== undefined && (!Array.isArray(record.usedActions) || !record.usedActions.every(action => ['Ask for money','Ask out','Compliment','Conversation','Gift','Hook up','Insult','Spend time','Unfriend'].includes(action as string)))) return false;
       const npcStats = record.stats;
       if (!id || !object(record) || !['friend', 'dating', 'unfriended'].includes(record.status as string) || typeof record.strength !== 'number' || !Number.isFinite(record.strength) || record.strength < 0 || record.strength > 100 || !object(npcStats) || !statNames.every(key => typeof npcStats[key] === 'number' && Number.isFinite(npcStats[key]) && (npcStats[key] as number) >= 0 && (npcStats[key] as number) <= 100)) return false;
     }
@@ -59,7 +72,7 @@ function validLife(value: unknown): value is Life {
     const school = occupation.school;
     if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study hard','Join an activity'].includes(action as string))))) return false;
   }
-  if (value.pendingEvent !== undefined && (!object(value.pendingEvent) || value.pendingEvent.age !== value.age || !validEvent(value.pendingEvent.event))) return false;
+  if (value.pendingEvent !== undefined && (!object(value.pendingEvent) || value.pendingEvent.age !== value.age || !validEvent(value.pendingEvent.event) || value.pendingEvent.queue !== undefined && (!Array.isArray(value.pendingEvent.queue) || !value.pendingEvent.queue.every(validEvent)))) return false;
   if (value.inbox !== undefined) {
     if (!Array.isArray(value.inbox)) return false;
     const ids = new Set<string>();
@@ -88,6 +101,7 @@ export function loadStore(storage: StorageLike): SaveStore { const store = parse
     const [firstName, ...rest] = life.name.trim().split(/\s+/);
     if (rest.length) upgraded = { ...upgraded, firstName, lastName: rest.join(' ') };
   }
+  if (upgraded.age === 0 && upgraded.pendingEvent?.age === 0) upgraded = {...upgraded,pendingEvent:undefined,log:[{age:0,tag:'LIFE',text:birthIntroduction(upgraded.name,upgraded.city,upgraded.family)}]};
   const city = life.locationId ? cityById(life.locationId) : resolveCity(life.city);
   // Unknown legacy/non-US locations stay intact. Never silently move an existing
   // person to a different city or apply an unrelated state's policies.
@@ -107,6 +121,7 @@ export function persistStore(storage: StorageLike, store: SaveStore): void {
   storage.setItem(SAVE_KEY, raw);
 }
 export function restartLife(life: Life): Life {
-  return { ...life, age: 0, balance: 0, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: life.family ? { ...life.family.birthStats } : { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: `My name is ${life.name}. I was born in ${life.city}.` }] };
+  const family = life.family ? resetFamily(life.family) : undefined;
+  return { ...life, family, age: 0, balance: 0, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: life.family ? { ...life.family.birthStats } : { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: birthIntroduction(life.name, life.city, family) }] };
 }
 export function lifeDate(life: Life): string { return `01/01/${life.birthYear + life.age}`; }

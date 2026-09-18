@@ -1,10 +1,11 @@
+import { advanceFamily } from './family.ts';
 import type { Life } from './saves';
 import type { LifeEvent } from './data';
 import { advanceOccupation, getOccupation, university, libraryJob } from './occupation.ts';
 import { eventForAge } from './lifeEvents.ts';
 
 export type LifeMail = { id: string; age: number; sender: string; read: boolean; archived?: boolean; event: LifeEvent; decision?: number };
-export type PendingLifeEvent = { age: number; event: LifeEvent };
+export type PendingLifeEvent = { age: number; event: LifeEvent; queue?: LifeEvent[] };
 export const hasRequiredDecisions = (life: Life) => Boolean(life.pendingEvent || life.inbox?.some(mail => mail.decision === undefined));
 export function mailForAge(age: number): { sender: string; event: LifeEvent }[] {
   if (age === 19) return [{ sender: 'Northbridge University · Admissions', event: { category: 'University acceptance', title: 'Your university acceptance', text: 'Congratulations! Northbridge University has offered you a place on its undergraduate programme. Please respond to your offer.', choices: [
@@ -24,7 +25,9 @@ export function advanceYear(life: Life, deliverMail = false): Life {
     { label: 'Celebrate with friends', hint: 'Share this moment.', outcome: 'I graduated from high school. I celebrated with my friends.', effect: { Happiness: 4 } },
     { label: 'Enjoy a family dinner', hint: 'Thank the people who supported you.', outcome: 'I graduated from high school. I celebrated with my family.', effect: { Happiness: 3 } }
   ] } : eventForAge(age);
-  return { ...life, age, occupation: advanceOccupation(life, age), pendingEvent: { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
+  const growth=advanceFamily(life.family,life.id,age,life.lastName??life.name.split(' ').slice(1).join(' '));
+  const birth:LifeEvent|undefined=growth.newborn?{category:'Family',title:'A new sibling!',text:`Your mother gave birth to ${growth.newborn.name}, your new ${growth.newborn.gender==='Male'?'brother':'sister'}.`,choices:[{label:'Welcome to the family',hint:'Meet your new sibling.',outcome:`My ${growth.newborn.gender==='Male'?'brother':'sister'} ${growth.newborn.name} was born.`}]}:undefined;
+  return { ...life, ...(growth.family?{family:growth.family}:{}), age, occupation: advanceOccupation(life, age), pendingEvent: birth ? {age,event:birth,queue:[event]} : { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
 }
 export function answerLifeEvent(life: Life, decision: number): Life {
   const pending = life.pendingEvent;
@@ -38,7 +41,7 @@ export function answerLifeEvent(life: Life, decision: number): Life {
     for (const key of ['grades','popularity'] as const) school[key] = Math.max(0,Math.min(100,school[key] + (choice.schoolEffect[key] ?? 0)));
     occupation.school = school;
   }
-  return { ...life, pendingEvent: undefined, stats, occupation, log: [...life.log, { age: pending.age, tag: 'LIFE', text: choice.outcome }] };
+  return { ...life, pendingEvent: pending.queue?.length ? {age:pending.age,event:pending.queue[0],...(pending.queue.length>1?{queue:pending.queue.slice(1)}:{})} : undefined, stats, occupation, log: [...life.log, { age: pending.age, tag: 'LIFE', text: choice.outcome }] };
 }
 export function setMailRead(life: Life, id: string, read: boolean): Life {
   return { ...life, inbox: life.inbox?.map(mail => mail.id === id ? { ...mail, read } : mail) };

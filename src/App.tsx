@@ -8,7 +8,6 @@ import { CommandPrompt, FileExplorer, MyLife, Messenger, WebSurfer, programs, ty
 import { activateWindow, createDesktopWindows, fitRect, minimumSize, taskbarWindow, windowIds, type Bounds, type DesktopWindows, type Rect, type WindowId } from './windowManager';
 import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore } from './saves';
 import { generateFamily } from './family';
-import { eventForAge } from './lifeEvents';
 import { schoolAction, type SchoolAction } from './occupation';
 import { characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
 import { advanceYear, answerLifeEvent } from './mail';
@@ -122,7 +121,7 @@ export default function App() {
     if (mode === 'desktop' && !saveCurrent()) return;
     const id = crypto.randomUUID();
     const family = generateFamily(id, lastName);
-    const next = { ...restartLife({ ...blankLife(), id, family, name, firstName, lastName, city: city.name, locationId: city.id }), pendingEvent: { age: 0, event: eventForAge(0) } };
+    const next = restartLife({ ...blankLife(), id, family, name, firstName, lastName, city: city.name, locationId: city.id });
     setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); closeModal();
   }
   function ageUp() {
@@ -157,7 +156,7 @@ export default function App() {
     const groups = characters(life); const person = [...groups.personal, ...groups.work, ...groups.school].find(item => item.id === id);
     if (!person || actionUnavailable(life, person, action)) return;
     setEventSource({ kind: 'activity' });
-    setEvent({category:'Relationship',title:`${action} · ${person.name}`,text:action === 'Gift' ? 'Give a thoughtful gift for $25.00?' : action === 'Unfriend' ? `End your friendship with ${person.name}?` : action === 'Ask out' ? `Ask ${person.name} out on a date?` : action === 'Compliment' ? `Give ${person.name} a sincere compliment?` : action === 'Insult' ? `Insult ${person.name}? This may hurt your relationship.` : action === 'Conversation' ? `Have a conversation with ${person.name}?` : `Would you like to ${action.toLowerCase()} with ${person.name}?`,choices:[{label:action,hint:action === 'Gift' ? '$25.00 will be deducted from your bank balance.' : 'See how they respond.',outcome:'',relationship:{id,action}},{label:'Cancel',hint:'Return to their profile.',outcome:''}]});
+    setEvent({category:'Relationship',title:`${action} · ${person.name}`,text:action === 'Ask for money' ? `Ask ${person.name} for money? You can ask each parent once this year.` : action === 'Gift' ? 'Give a thoughtful gift for $25.00?' : action === 'Unfriend' ? `End your friendship with ${person.name}?` : action === 'Ask out' ? `Ask ${person.name} out on a date?` : action === 'Compliment' ? `Give ${person.name} a sincere compliment?` : action === 'Insult' ? `Insult ${person.name}? This may hurt your relationship.` : action === 'Conversation' ? `Have a conversation with ${person.name}?` : `Would you like to ${action.toLowerCase()} with ${person.name}?`,choices:[{label:action,hint:action === 'Gift' ? '$25.00 will be deducted from your bank balance.' : 'See how they respond.',outcome:'',relationship:{id,action}},{label:'Cancel',hint:'Return to their profile.',outcome:''}]});
   }
   function turnOff() { setMode('off'); closeModal(); setMenu(false); }
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }

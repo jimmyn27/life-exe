@@ -14,7 +14,7 @@ test('families share the child surname, usually both, with bounded inherited bir
     assert.deepEqual(generateFamily(String(seed),'River Smith'),family);
     assert.ok(family.parents.some(parent=>parent.name.endsWith(' River Smith')));
     if(family.parents.every(parent=>parent.name.endsWith(' River Smith'))) both++;
-    for(const key of ['Smarts','Looks']) assert.ok(Math.abs(family.birthStats[key]-(family.parents[0].stats[key]+family.parents[1].stats[key])/2)<=8.5);
+    for(const key of ['Smarts','Looks']) assert.ok(Math.abs(family.birthStats[key]-family.parents.reduce((sum,p)=>sum+p.stats[key],0)/family.parents.length)<=8.5);
   }
   assert.ok(both>150 && both<200);
 });
