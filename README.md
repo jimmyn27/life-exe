@@ -5,11 +5,11 @@ A Windows XP Luna inspired desktop for a text-based life simulator, with the Bli
 ## Current preview
 
 - Glossy Luna windows, a green Start button, and a two-column XP Start menu.
-- Web Surfer hosts lifeconnect: Home, Education, Work (from age 14), and Activities. University listings are part of Education after high school graduation.
+- Web Surfer hosts lifeconnect: Home, Education, Work (always visible; part-time listings from age 14), and Activities. University listings are part of Education after high school graduation.
 - My Life is a separate Task Manager-style program with character details and statistics together in one view. Its bank balance links directly to Finances.
 - File Explorer contains Assets and Finances. Education and job details are in lifeconnect.
 - Command Prompt groups life history under one Age header per year, with plain paragraphs and no category tags. Its launcher is in Start, and its open window appears on the taskbar. Command Prompt is the only program open by default.
-- Messenger profiles show gender, age, education, occupation and the four character stats. Befriend is the first action for acquaintances. Only existing friends can be unfriended. Befriended school/work contacts appear in Contacts and remain there after leaving the roster. Parents and siblings cannot be befriended. School and Work tabs show enrolled/employed contacts; family actions follow age gates. Gifts cost $25; romance requires adults. Social media remains hidden.
+- Messenger person icons are pink for females and blue for males. Profiles show gender, age, education, occupation and the four character stats. Befriend is the first action for acquaintances. Only existing friends can be unfriended. Befriended school/work contacts appear in Contacts and remain there after leaving the roster. Parents and siblings cannot be befriended. School and Work tabs show enrolled/employed contacts; family actions follow age gates. Gifts cost $25; romance requires adults. Social media remains hidden.
 - The desktop contains only Recycle Bin and My Life, using a PC icon. Recycle Bin remains a placeholder.
 - Desktop icons stay fixed in place. A single click selects an icon; double-click opens My Life. Enter also opens a selected icon.
 - Multiple programs can remain open at once.

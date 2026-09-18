@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { MouseEvent, PointerEvent, ReactNode } from 'react';
 
 export type IconKind = 'computer' | 'folder' | 'document' | 'command' | 'web' | 'messenger' | 'recycle' | 'assets' | 'stats' | 'new' | 'start' | 'save' | 'power' | 'restart' | 'logoff' | 'people' | 'activity' | 'mail';
@@ -26,4 +27,10 @@ export function Icon({ kind, className = '' }: { kind: IconKind; className?: str
 }
 export function TitleBar({ onPointerDown, onDoubleClick, title, icon, inactive = false, onMinimize, onMaximize, onClose, maximized = false }: { onPointerDown?: (e: PointerEvent<HTMLElement>) => void; onDoubleClick?: (e: MouseEvent<HTMLElement>) => void; title: string; icon: IconKind; inactive?: boolean; onMinimize?: () => void; onMaximize?: () => void; onClose?: () => void; maximized?: boolean }) {
   return <header onPointerDown={onPointerDown} onDoubleClick={onDoubleClick} className={`title-bar ${inactive ? 'inactive' : ''}`}><Icon kind={icon}/><span className="window-title">{title}</span><div className="window-controls">{onMinimize && <button aria-label={`Minimize ${title}`} onClick={onMinimize}><span className="minimize-glyph"/></button>}{onMaximize && <button aria-label={`${maximized ? 'Restore' : 'Maximize'} ${title}`} onClick={onMaximize}><span className={`maximize-glyph ${maximized ? 'restore-glyph' : ''}`}/></button>}{onClose && <button className="close-control" aria-label={`Close ${title}`} onClick={onClose}>×</button>}</div></header>;
+}
+
+export function PersonIcon({ gender }: { gender: string }) {
+  const gradientId = useId();
+  const female = gender === 'Female';
+  return <svg className={`pixel-icon xp-icon messenger-person-icon ${female ? 'person-female' : 'person-male'}`} viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id={gradientId} x2=".3" y2="1"><stop stopColor={female ? '#ffe0f0' : '#b5e7ff'}/><stop offset=".45" stopColor={female ? '#ee8abb' : '#55ace6'}/><stop offset="1" stopColor={female ? '#c5488d' : '#216bb9'}/></linearGradient></defs><circle cx="16" cy="9" r="7" fill={`url(#${gradientId})`}/><path d="M5 30c0-18 22-18 22 0z" fill={`url(#${gradientId})`}/><path d="M12 5q3-3 6-1" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity=".7"/></svg>;
 }
