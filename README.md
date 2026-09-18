@@ -23,7 +23,7 @@ A Windows XP Luna inspired desktop for a text-based life simulator, with the Bli
 - Local character saves, character switching, and a new character dialog.
 - Layouts for desktop and smaller screens.
 
-The game opens on the character selection screen with no demo character; new characters begin at age 0 with separate first and last name fields, saved separately. Older full names are split on load when possible. Age Up commits the new age, date, school progression, and job tenure before showing decisions for the beginning of that age. Lookout is removed from the current UI and no new mail is delivered; existing mail and occupation data remain in saves and old mail does not block progression. This remains a UI prototype with sample contacts and fixed starter grades, popularity, and job performance. Applications, salary payments, and promotions will come later. School years and years in position advance with age; primary starts at 6, secondary at 12, and secondary graduation is at 18. Occupation records save per character and reset on restart. Wallpaper source information is in `public/ASSETS.md`.
+The game opens on the character selection screen with no demo character; new characters begin at age 0 with separate first and last name fields, saved separately. Older full names are split on load when possible. Age Up commits the new age, date, school progression, and job tenure before showing decisions for the beginning of that age. Lookout is removed from the current UI and no new mail is delivered; existing mail and occupation data remain in saves and old mail does not block progression. This remains a UI prototype with starter contacts and job performance; school grades and popularity evolve yearly. Applications, salary payments, and promotions will come later. School years and years in position advance with age; primary starts at 6, secondary at 12, and secondary graduation is at 18. Occupation records save per character and reset on restart. Wallpaper source information is in `public/ASSETS.md`.
 
 ## Characters and saving
 
@@ -48,3 +48,11 @@ Run `pnpm test` using Node.js 24 or another runtime supporting TypeScript type s
 The project uses React, TypeScript, and Vite. Play using the desktop shortcuts and taskbar buttons.
 
 The fresh-start playtest update clears old v1 prototype saves and backups on first load. New v2 saves persist across future updates.
+
+## Family and growing up
+
+New lives have two saved parents. At least one shares the child's full last name, and both usually do. Birth Smarts and Looks inherit the average of the parents' stats with small variation. Restarting preserves the family and restores birth stats. Existing characters retain their current player stats.
+
+Childhood age-up events for ages 0–12 live in `src/childhoodEvents.ts`. Birth has a welcome popup; ages 6, 12 and 15 mark elementary, middle and high school enrollment. Grades 1–12 progress automatically, graduating at age 18 with a high school diploma. Enrollment and qualifications update before decisions appear.
+
+File Explorer → Occupation → Education shows the current school, stage, grade, school year, grades and popularity. Study hard and Join an activity are available once each year. Their effects, yearly grade/popularity changes and school-event choices persist in saves. School contacts appear in Messenger while enrolled. This first education system automatically graduates students; admissions and graduation failure rules are future work.

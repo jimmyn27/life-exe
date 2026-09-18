@@ -1,6 +1,6 @@
 export type Stats = { Health: number; Happiness: number; Smarts: number; Looks: number };
 export type Entry = { age: number; tag: string; text: string };
-export type Choice = { label: string; hint: string; outcome: string; effect?: Partial<Stats>; relationship?: { id: string; action: import('./relationships').RelationshipAction } };
+export type Choice = { label: string; hint: string; outcome: string; effect?: Partial<Stats>; schoolEffect?: { grades?: number; popularity?: number }; relationship?: { id: string; action: import('./relationships').RelationshipAction } };
 export type LifeEvent = { category: string; title: string; text: string; choices: Choice[] };
 export const initialStats: Stats = { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 };
 export const events: LifeEvent[] = [

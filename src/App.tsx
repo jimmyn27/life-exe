@@ -7,6 +7,9 @@ import TaskbarPrograms from './TaskbarPrograms';
 import { CommandPrompt, FileExplorer, MyLife, Messenger, WebSurfer, programs, type ExplorerPage } from './Programs';
 import { activateWindow, createDesktopWindows, fitRect, minimumSize, taskbarWindow, windowIds, type Bounds, type DesktopWindows, type Rect, type WindowId } from './windowManager';
 import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore } from './saves';
+import { generateFamily } from './family';
+import { eventForAge } from './lifeEvents';
+import { schoolAction, type SchoolAction } from './occupation';
 import { characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
 import { advanceYear, answerLifeEvent } from './mail';
 import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SNAPSHOT } from './catalogs/us/index';
@@ -117,7 +120,9 @@ export default function App() {
     e.preventDefault(); const firstName = draftFirstName.trim(); const lastName = draftLastName.trim(); if (!firstName || !lastName) return; const name = `${firstName} ${lastName}`;
     const city = cityById(draftCity); if (!city) return;
     if (mode === 'desktop' && !saveCurrent()) return;
-    const next = restartLife({ ...blankLife(), id: crypto.randomUUID(), name, firstName, lastName, city: city.name, locationId: city.id });
+    const id = crypto.randomUUID();
+    const family = generateFamily(id, lastName);
+    const next = { ...restartLife({ ...blankLife(), id, family, name, firstName, lastName, city: city.name, locationId: city.id }), pendingEvent: { age: 0, event: eventForAge(0) } };
     setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); closeModal();
   }
   function ageUp() {
@@ -165,7 +170,7 @@ export default function App() {
       <div className="desktop-workspace" ref={workspaceRef}>
         <DesktopIcons onOpenLife={openMyLife}/>
         {windows && windowIds.filter(id => windows[id].status !== 'closed').map(id => <FloatingWindow key={`${life.id}:${id}`} id={id} title={titles[id]} icon={icons[id]} state={windows[id]} bounds={bounds} active={activeId === id} className={`program-window program-${id.toLowerCase()}`} onFocus={() => focusWindow(id)} onChange={rect => setRect(id, rect)} onMinimize={() => minimize(id)} onMaximize={() => toggleMaximize(id)} onClose={() => closeWindow(id)}>
-          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)}/> : <Messenger life={life} onAction={relationshipAction}/>}
+          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice} onSchoolAction={(action: SchoolAction) => { setLife(previous => schoolAction(previous, action)); setDirty(true); }}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)}/> : <Messenger life={life} onAction={relationshipAction}/>}
         </FloatingWindow>)}
         <div className="age-up-dock"><span className="age-dock-label">YOUR NEXT CHAPTER</span><button className="classic-button desktop-age-up" disabled={ageBlocked} onClick={ageUp}><span className="age-dock-icon" aria-hidden="true">↑</span><span><strong>Age Up</strong><small>{life.pendingEvent ? "Life event needs a decision" : `Begin age ${life.age + 1}`}</small></span><span className="age-dock-arrow" aria-hidden="true">→</span></button>{life.pendingEvent && !event && <button className="classic-button resume-life-event" onClick={resumeEvent}>Review life event…</button>}</div>
       </div>

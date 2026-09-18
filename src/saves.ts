@@ -1,3 +1,4 @@
+import type { Family } from './family';
 import type { Entry, Stats, LifeEvent } from './data';
 import type { LifeMail, PendingLifeEvent } from './mail';
 import type { RelationshipRecord } from './relationships';
@@ -5,7 +6,7 @@ import type { Occupation } from './occupation';
 import type { SocialPage } from './social';
 import { cityById, resolveCity, US_SNAPSHOT } from './catalogs/us/index.ts';
 
-export type Life = { id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; relationships?: Record<string, RelationshipRecord> };
+export type Life = { id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; family?: Family; relationships?: Record<string, RelationshipRecord> };
 export type SaveStore = { version: 1; activeId: string | null; lives: Life[] };
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 export const SAVE_KEY = 'life.exe.saves.v2';
@@ -18,7 +19,7 @@ const statNames = ['Health', 'Happiness', 'Smarts', 'Looks'] as const;
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 function validEvent(value: unknown): value is LifeEvent {
   if (!object(value) || typeof value.title !== 'string' || typeof value.text !== 'string' || typeof value.category !== 'string' || !Array.isArray(value.choices) || !value.choices.length) return false;
-  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
+  return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => statNames.includes(key as typeof statNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
 }
 function validLife(value: unknown): value is Life {
   if (!object(value) || typeof value.id !== 'string' || !value.id || typeof value.name !== 'string' || !value.name.trim() || typeof value.city !== 'string') return false;
@@ -28,6 +29,12 @@ function validLife(value: unknown): value is Life {
   if (value.firstName !== undefined && (typeof value.firstName !== 'string' || !value.firstName.trim() || typeof value.lastName !== 'string' || !value.lastName.trim() || value.name !== `${value.firstName} ${value.lastName}`)) return false;
   if (!Number.isInteger(value.age) || (value.age as number) < 0 || (value.age as number) > 1000 || !Number.isInteger(value.birthYear) || (value.birthYear as number) < 1 || (value.birthYear as number) > 8000 || typeof value.balance !== 'number' || !Number.isFinite(value.balance)) return false;
   const stats = value.stats;
+  if (value.family !== undefined) {
+    const family = value.family;
+    const validStats = (item: unknown) => object(item) && statNames.every(key => typeof item[key] === 'number' && Number.isFinite(item[key]) && (item[key] as number) >= 0 && (item[key] as number) <= 100);
+    if (!object(family) || !validStats(family.birthStats) || !Array.isArray(family.parents) || family.parents.length !== 2) return false;
+    if (!family.parents.every((parent, index) => object(parent) && parent.id === (index === 0 ? 'parent-mother' : 'parent-father') && parent.relation === (index === 0 ? 'Mother' : 'Father') && parent.gender === (index === 0 ? 'Female' : 'Male') && ['name','education','occupation'].every(key => typeof parent[key] === 'string' && !!(parent[key] as string).trim()) && Number.isInteger(parent.ageAtBirth) && (parent.ageAtBirth as number) >= 18 && (parent.ageAtBirth as number) <= 60 && validStats(parent.stats))) return false;
+  }
   if (value.social !== undefined) {
     const social = value.social;
     if (!object(social) || typeof social.created !== 'boolean' || !Number.isSafeInteger(social.followers) || (social.followers as number) < 0 || !Array.isArray(social.posts)) return false;
@@ -50,7 +57,7 @@ function validLife(value: unknown): value is Life {
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
     const school = occupation.school;
-    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity))) return false;
+    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study hard','Join an activity'].includes(action as string))))) return false;
   }
   if (value.pendingEvent !== undefined && (!object(value.pendingEvent) || value.pendingEvent.age !== value.age || !validEvent(value.pendingEvent.event))) return false;
   if (value.inbox !== undefined) {
@@ -100,6 +107,6 @@ export function persistStore(storage: StorageLike, store: SaveStore): void {
   storage.setItem(SAVE_KEY, raw);
 }
 export function restartLife(life: Life): Life {
-  return { ...life, age: 0, balance: 0, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: `My name is ${life.name}. I was born in ${life.city}.` }] };
+  return { ...life, age: 0, balance: 0, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: life.family ? { ...life.family.birthStats } : { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: `My name is ${life.name}. I was born in ${life.city}.` }] };
 }
 export function lifeDate(life: Life): string { return `01/01/${life.birthYear + life.age}`; }

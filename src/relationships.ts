@@ -1,6 +1,6 @@
 import type { Life } from './saves';
 import type { Stats } from './data';
-import { getOccupation, occupationContacts, type Contact } from './occupation.ts';
+import { getOccupation, occupationContacts, schoolName, type Contact } from './occupation.ts';
 
 export const relationshipActions = ['Ask out', 'Compliment', 'Conversation', 'Gift', 'Hook up', 'Insult', 'Spend time', 'Unfriend'] as const;
 export type RelationshipAction = typeof relationshipActions[number];
@@ -9,18 +9,20 @@ export type Person = Contact & { id: string; gender: string; age: number; educat
 export function characters(life: Life): { personal: Person[]; work: Person[]; school: Person[] } {
   const occupation = getOccupation(life);
   const contextual = occupationContacts(life);
-  const personal: Contact[] = [{name:'Elena Morgan',relation:'Mother',strength:86,group:'Family'},{name:'Daniel Morgan',relation:'Father',strength:79,group:'Family'},...(life.age >= 12 ? [{name:'Maya Chen',relation:'Best friend',strength:93,group:'Friends'}] : [])];
+  const surname = life.lastName ?? (life.name.trim().split(/\s+/).slice(1).join(' ') || 'Morgan');
+  const personal: Contact[] = [...(life.family?.parents.map(parent => ({name:parent.name,relation:parent.relation,strength:parent.relation === 'Mother' ? 86 : 79,group:'Family'})) ?? [{name:`Elena ${surname}`,relation:'Mother',strength:86,group:'Family'},{name:`Daniel ${surname}`,relation:'Father',strength:79,group:'Family'}]),...(life.age >= 12 ? [{name:'Maya Chen',relation:'Best friend',strength:93,group:'Friends'}] : [])];
   function profile(contact: Contact, setting: 'personal' | 'work' | 'school'): Person {
-    const id = contact.name.toLowerCase().replaceAll(' ', '-');
+    const familyParent = life.family?.parents.find(parent => parent.relation === contact.relation);
+    const id = familyParent?.id ?? contact.name.toLowerCase().replaceAll(' ', '-');
     const parent = contact.relation === 'Mother' || contact.relation === 'Father';
     const staff = ['Teacher','Professor','Manager'].includes(contact.relation);
-    const age = life.age + (contact.relation === 'Mother' ? 28 : contact.relation === 'Father' ? 31 : staff ? 25 : setting === 'work' ? 3 : 0);
+    const age = life.age + (familyParent?.ageAtBirth ?? (contact.relation === 'Mother' ? 28 : contact.relation === 'Father' ? 31 : staff ? 25 : setting === 'work' ? 3 : 0));
     const seed = [...id].reduce((total, char) => total + char.charCodeAt(0),0);
     const stats: Stats = {Health:75+seed%21,Happiness:65+seed%30,Smarts:60+seed%36,Looks:55+seed%40};
     const record = life.relationships?.[id];
     const education = parent ? contact.relation === 'Mother' ? 'University' : 'Secondary school' : staff ? 'University' : age >= 18 ? 'Secondary school' : age >= 12 ? 'Primary school' : 'No completed schooling yet';
-    const job = parent ? contact.relation === 'Mother' ? 'Nurse' : 'Electrician' : setting === 'work' ? `${contact.relation === 'Coworker' ? 'Library assistant' : contact.relation} · ${occupation.job?.employer}` : setting === 'school' ? `${contact.relation === 'Classmate' ? 'Student' : contact.relation} · ${occupation.school?.name}` : life.age < 18 ? 'Student' : 'Barista';
-    return {...contact,id,parent,age,education,occupation:job,gender:['Daniel Morgan','Noah Reed','Oliver Patel'].includes(contact.name) ? 'Male' : 'Female',stats:record?.stats ?? stats,strength:record?.strength ?? contact.strength,status:record?.status ?? 'friend'};
+    const job = parent ? contact.relation === 'Mother' ? 'Nurse' : 'Electrician' : setting === 'work' ? `${contact.relation === 'Coworker' ? 'Library assistant' : contact.relation} · ${occupation.job?.employer}` : setting === 'school' ? `${contact.relation === 'Classmate' ? 'Student' : contact.relation} · ${occupation.school ? schoolName(life,occupation.school) : ''}` : life.age < 18 ? 'Student' : 'Barista';
+    return {...contact,id,parent,age,education:familyParent?.education ?? education,occupation:familyParent?.occupation ?? job,gender:familyParent?.gender ?? (contact.relation === 'Father' || ['Noah Reed','Oliver Patel'].includes(contact.name) ? 'Male' : 'Female'),stats:record?.stats ?? familyParent?.stats ?? stats,strength:record?.strength ?? contact.strength,status:record?.status ?? 'friend'};
   }
   return {personal:personal.map(contact => profile(contact,'personal')).filter(person => person.parent || person.status !== 'unfriended'),work:contextual.work.map(contact => profile(contact,'work')),school:contextual.school.map(contact => profile(contact,'school'))};
 }

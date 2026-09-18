@@ -20,9 +20,9 @@ export function mailForAge(age: number): { sender: string; event: LifeEvent }[] 
 export function advanceYear(life: Life, deliverMail = false): Life {
   if (life.pendingEvent || deliverMail && hasRequiredDecisions(life) || life.age >= 1000) return life;
   const age = life.age + 1;
-  const event: LifeEvent = age === 18 ? { category: 'Education', title: 'Congratulations, graduate!', text: 'You have graduated from secondary school. A whole new chapter is ahead. How would you like to celebrate?', choices: [
-    { label: 'Celebrate with friends', hint: 'Share this moment.', outcome: 'I graduated from secondary school. I celebrated with my friends.', effect: { Happiness: 4 } },
-    { label: 'Enjoy a family dinner', hint: 'Thank the people who supported you.', outcome: 'I graduated from secondary school. I celebrated with my family.', effect: { Happiness: 3 } }
+  const event: LifeEvent = age === 18 ? { category: 'Education', title: 'Congratulations, graduate!', text: 'You have graduated from high school. A whole new chapter is ahead. How would you like to celebrate?', choices: [
+    { label: 'Celebrate with friends', hint: 'Share this moment.', outcome: 'I graduated from high school. I celebrated with my friends.', effect: { Happiness: 4 } },
+    { label: 'Enjoy a family dinner', hint: 'Thank the people who supported you.', outcome: 'I graduated from high school. I celebrated with my family.', effect: { Happiness: 3 } }
   ] } : eventForAge(age);
   return { ...life, age, occupation: advanceOccupation(life, age), pendingEvent: { age, event }, inbox: [...(life.inbox ?? []), ...(deliverMail ? mailForAge(age) : []).map((mail, index) => ({ ...mail, id: `${life.id}:mail:${age}:${index}`, age, read: false }))] };
 }
@@ -32,7 +32,13 @@ export function answerLifeEvent(life: Life, decision: number): Life {
   const choice = pending.event.choices[decision];
   const stats = { ...life.stats };
   for (const key of Object.keys(choice.effect ?? {}) as (keyof typeof stats)[]) stats[key] = Math.max(0, Math.min(100, stats[key] + (choice.effect?.[key] ?? 0)));
-  return { ...life, pendingEvent: undefined, stats, log: [...life.log, { age: pending.age, tag: 'LIFE', text: choice.outcome }] };
+  const occupation = { ...getOccupation(life) };
+  if (occupation.school && choice.schoolEffect) {
+    const school = { ...occupation.school };
+    for (const key of ['grades','popularity'] as const) school[key] = Math.max(0,Math.min(100,school[key] + (choice.schoolEffect[key] ?? 0)));
+    occupation.school = school;
+  }
+  return { ...life, pendingEvent: undefined, stats, occupation, log: [...life.log, { age: pending.age, tag: 'LIFE', text: choice.outcome }] };
 }
 export function setMailRead(life: Life, id: string, read: boolean): Life {
   return { ...life, inbox: life.inbox?.map(mail => mail.id === id ? { ...mail, read } : mail) };

@@ -77,7 +77,7 @@ test('malformed popup and email saves reject duplicates, future ages, invalid ef
    const current = life(11); const next = advanceYear(current);
    assert.equal(next.age,12); assert.equal(next.occupation.school.level,'Secondary school');
    assert.equal(next.occupation.highestEducation,'Primary school'); assert.equal(next.inbox.length,0);
-   assert.equal(next.pendingEvent.age,12); assert.equal(next.pendingEvent.event.category,'Childhood event');
+   assert.equal(next.pendingEvent.age,12); assert.equal(next.pendingEvent.event.title,'Starting middle school');
    const dormant = {...life(18), inbox:[{id:'old',age:18,sender:'old',read:false,event:next.pendingEvent.event}]};
    const advanced = advanceYear(dormant); assert.equal(advanced.age,19); assert.equal(advanced.inbox.length,1);
  });
