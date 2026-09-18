@@ -6,7 +6,8 @@ import type { Occupation } from './occupation';
 import type { SocialPage } from './social';
 import { cityById, resolveCity, US_SNAPSHOT } from './catalogs/us/index.ts';
 
-export type Life = { id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; family?: Family; relationships?: Record<string, RelationshipRecord> };
+export type Sexuality = 'Straight' | 'Bisexual' | 'Gay';
+export type Life = { sexuality?:Sexuality; id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; family?: Family; relationships?: Record<string, RelationshipRecord> };
 export type SaveStore = { version: 1; activeId: string | null; lives: Life[] };
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 export const SAVE_KEY = 'life.exe.saves.v2';
@@ -28,6 +29,7 @@ function validLife(value: unknown): value is Life {
   if ((value.firstName === undefined) !== (value.lastName === undefined)) return false;
   if (value.firstName !== undefined && (typeof value.firstName !== 'string' || !value.firstName.trim() || typeof value.lastName !== 'string' || !value.lastName.trim() || value.name !== `${value.firstName} ${value.lastName}`)) return false;
   if (!Number.isInteger(value.age) || (value.age as number) < 0 || (value.age as number) > 1000 || !Number.isInteger(value.birthYear) || (value.birthYear as number) < 1 || (value.birthYear as number) > 8000 || typeof value.balance !== 'number' || !Number.isFinite(value.balance)) return false;
+  if(value.sexuality!==undefined && !['Straight','Bisexual','Gay'].includes(value.sexuality as string))return false;
   const stats = value.stats;
   if (value.family !== undefined) {
     const family = value.family;
@@ -73,13 +75,15 @@ function validLife(value: unknown): value is Life {
     const job = occupation.job;
     if (job !== null && (!object(job) || !['position', 'employer', 'hours'].every(key => typeof job[key] === 'string') || typeof job.salary !== 'number' || !Number.isFinite(job.salary) || job.salary < 0 || !percentage(job.performance) || !startAge(job.startAge))) return false;
     const school = occupation.school;
-    const activityIds=["cooking", "film", "foreign-language", "photography", "robotics", "chess", "book", "history", "student-council", "debate", "math", "science", "business", "honor-society", "politics", "video-games", "art", "badminton", "baseball", "basketball", "cheerleading", "diving", "football", "golf", "gymnastics", "hockey", "lacrosse", "rugby", "soccer", "swimming", "tennis", "track", "volleyball", "wrestling"];
+    if(occupation.droppedOut!==undefined && typeof occupation.droppedOut!=='boolean')return false;
+    if(object(occupation.school) && (occupation.school.transfers!==undefined && (!Number.isInteger(occupation.school.transfers) || (occupation.school.transfers as number)<0) || occupation.school.danceAskedIds!==undefined && (!Array.isArray(occupation.school.danceAskedIds) || !occupation.school.danceAskedIds.every(id=>typeof id==='string'))))return false;
+    const activityIds=["drama","music","yearbook","environmental","cooking", "film", "foreign-language", "photography", "robotics", "chess", "book", "history", "student-council", "debate", "math", "science", "business", "honor-society", "politics", "video-games", "art", "badminton", "baseball", "basketball", "cheerleading", "diving", "football", "golf", "gymnastics", "hockey", "lacrosse", "rugby", "soccer", "swimming", "tennis", "track", "volleyball", "wrestling"];
     if(object(school)) {
       if(school.memberships!==undefined && (!Array.isArray(school.memberships) || new Set(school.memberships).size!==school.memberships.length || !school.memberships.every(id=>activityIds.includes(id as string))))return false;
       if(school.activityAttempts!==undefined && (!object(school.activityAttempts) || !Object.entries(school.activityAttempts).every(([id,attempt])=>activityIds.includes(id) && object(attempt) && startAge(attempt.age) && typeof attempt.accepted==='boolean')))return false;
       if(school.roster!==undefined && (!Array.isArray(school.roster) || school.roster.length>80 || !school.roster.every(person=>object(person) && typeof person.id==='string' && typeof person.name==='string' && ['Male','Female'].includes(person.gender as string) && ['Classmate','Teacher','Principal','Professor'].includes(person.relation as string) && typeof person.group==='string' && percentage(person.strength) && Number.isInteger(person.ageOffset) && (person.ageOffset as number)>=0 && (person.ageOffset as number)<=100 && (person.subject===undefined || typeof person.subject==='string')) || new Set(school.roster.map((person:Record<string,unknown>)=>person.id)).size!==school.roster.length))return false;
     }
-    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Middle school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study hard','Join an activity'].includes(action as string))))) return false;
+    if (school !== null && (!object(school) || typeof school.name !== 'string' || !['Primary school', 'Middle school', 'Secondary school', 'University'].includes(school.level as string) || !startAge(school.startAge) || !Number.isInteger(school.duration) || (school.duration as number) < 1 || (school.duration as number) > 20 || !percentage(school.grades) || !percentage(school.popularity) || school.yearActions !== undefined && (!Array.isArray(school.yearActions) || new Set(school.yearActions).size !== school.yearActions.length || !school.yearActions.every(action => ['Study harder','Study hard','Join an activity','Change schools','Drop out','Nurse','Skip school','School dance'].includes(action as string))))) return false;
   }
   if (value.pendingEvent !== undefined && (!object(value.pendingEvent) || value.pendingEvent.age !== value.age || !validEvent(value.pendingEvent.event) || value.pendingEvent.queue !== undefined && (!Array.isArray(value.pendingEvent.queue) || !value.pendingEvent.queue.every(validEvent)))) return false;
   if (value.inbox !== undefined) {

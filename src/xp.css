@@ -517,3 +517,7 @@
 .contact-details-title button{min-width:24px;padding:1px 5px}
 .contact-details-body{padding:0 12px 12px;background:#fff;max-height:55vh;overflow:auto}
 @media(max-width:700px){.enternet-explorer-columns.with-contacts{grid-template-columns:1fr}}
+
+.school-activity-group > summary{cursor:pointer;font-size:15px;color:#265d99;padding:12px 0;border-bottom:1px solid #d2deec}
+.school-activity-emoji{font-size:27px;flex:0 0 32px;text-align:center}
+#dance-classmate{display:block;width:100%;margin:8px 0 15px;padding:5px}

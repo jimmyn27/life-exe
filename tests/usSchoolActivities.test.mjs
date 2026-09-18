@@ -7,7 +7,7 @@ const life=age=>({id:'us-school',name:'Sam Smith',city:'New York City',age,birth
 test('US schooling follows four-year stages and normalizes existing school saves',()=>{
  for(let age=6;age<18;age++){const current=life(age),school=getOccupation(current).school;assert.equal(school.level,age<10?'Primary school':age<14?'Middle school':'Secondary school');assert.equal(school.duration,4);assert.equal(school.startAge,age<10?6:age<14?10:14);}
  const legacy={...life(14),occupation:{highestEducation:'Primary school',job:null,school:{name:'Old school',level:'Middle school',startAge:12,duration:3,grades:80,popularity:60,memberships:['chess']}}};
- const upgraded=getOccupation(legacy);assert.equal(upgraded.school.level,'Secondary school');assert.equal(upgraded.school.grades,80);assert.equal(upgraded.school.startAge,14);assert.deepEqual(upgraded.school.memberships,[]);
+ const upgraded=getOccupation(legacy);assert.equal(upgraded.school.level,'Secondary school');assert.equal(upgraded.school.grades,legacy.stats.Smarts);assert.equal(upgraded.school.startAge,14);assert.deepEqual(upgraded.school.memberships,[]);
 });
 test('expanded clubs and teams are eligible at ten, save correctly, and support gendered baseball labels',()=>{
  assert.equal(schoolActivities.filter(a=>a.group==='Sports').length,17);assert.equal(new Set(schoolActivities.map(a=>a.id)).size,schoolActivities.length);

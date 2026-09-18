@@ -1,3 +1,5 @@
+import SchoolDancePanel from './SchoolDancePanel';
+import {schoolDance,type DanceOutcome,type DanceMode} from './schoolDance';
 import { playSystemSound } from './sounds';
 import { personAddress } from './personAddress';
 import { interactionResult, type InteractionResult } from './interactionResults';
@@ -11,7 +13,7 @@ import DesktopIcons from './DesktopIcons';
 import TaskbarPrograms from './TaskbarPrograms';
 import { CommandPrompt, FileExplorer, MyLife, Messenger, WebSurfer, programs, type ExplorerPage } from './Programs';
 import { activateWindow, createDesktopWindows, fitRect, minimumSize, taskbarWindow, windowIds, type Bounds, type DesktopWindows, type Rect, type WindowId } from './windowManager';
-import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore } from './saves';
+import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore, type Sexuality } from './saves';
 import { generateFamily } from './family';
 import { schoolAction, type SchoolAction } from './occupation';
 import { characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
@@ -47,6 +49,8 @@ export default function App() {
   const [menu, setMenu] = useState(false);
   const [allPrograms, setAllPrograms] = useState(false);
   const [explorerPage, setExplorerPage] = useState<ExplorerPage>('Assets');
+  const [danceOpen,setDanceOpen]=useState(false),[danceOutcome,setDanceOutcome]=useState<DanceOutcome|null>(null);
+  const [draftSexuality,setDraftSexuality]=useState<Sexuality>('Straight');
   const [draftFirstName, setDraftFirstName] = useState('');
   const [draftLastName, setDraftLastName] = useState('');
   const [draftCity, setDraftCity] = useState(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID);
@@ -55,7 +59,7 @@ export default function App() {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDialogElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
-  const hasModal = Boolean(modal || event || notice || result);
+  const hasModal = Boolean(modal || event || notice || result || danceOpen);
   const ageBlocked = hasModal || Boolean(life.pendingEvent) || life.age >= 1000;
   useEffect(() => {
     if (mode !== 'desktop' || !life.pendingEvent) return;
@@ -105,7 +109,7 @@ export default function App() {
   }); }
   function setRect(id: WindowId, rect: Rect) { setWindows(previous => previous ? { ...previous, [id]: { ...previous[id], ...rect } } : previous); }
   function taskClick(id: WindowId) { setWindows(previous => previous ? taskbarWindow(previous, id) : previous); setMenu(false); }
-  function closeModal() { setResult(null); setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
+  function closeModal() { setDanceOpen(false);setDanceOutcome(null); setResult(null); setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
   function saveCurrent(announce = false): boolean {
     setMenu(false);
     try {
@@ -134,14 +138,14 @@ export default function App() {
       setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); setEvent(null); setEventSource({ kind: 'year' });
     } catch { setNotice('The character could not be opened because browser storage is unavailable. Your saved characters have not been changed.'); }
   }
-  function showNewLife() { setDraftFirstName(''); setDraftLastName(''); setDraftCity(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID); setModal('new'); setMenu(false); }
+  function showNewLife() { setDraftSexuality('Straight'); setDraftFirstName(''); setDraftLastName(''); setDraftCity(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID); setModal('new'); setMenu(false); }
   function startLife(e: FormEvent) {
     e.preventDefault(); const firstName = draftFirstName.trim(); const lastName = draftLastName.trim(); if (!firstName || !lastName) return; const name = `${firstName} ${lastName}`;
     const city = cityById(draftCity); if (!city) return;
     if (mode === 'desktop' && !saveCurrent()) return;
     const id = crypto.randomUUID();
     const family = generateFamily(id, lastName);
-    const next = restartLife({ ...blankLife(), id, family, name, firstName, lastName, city: city.name, locationId: city.id });
+    const next = restartLife({ ...blankLife(), id, family, name, firstName, lastName, sexuality:draftSexuality, city: city.name, locationId: city.id });
     setLife(next); setDirty(true); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); closeModal();
   }
   function ageUp() {
@@ -157,6 +161,7 @@ export default function App() {
       openWindow('Command');
       return;
     }
+    if(choice.schoolAction){setEvent(null);finishSchoolAction(choice.schoolAction);return;}
     if (choice.relationship) {
       const { id, action, giftId } = choice.relationship;
       const groups=characters(life),person=[...groups.personal,...groups.work,...groups.school].find(item=>item.id===id);
@@ -176,6 +181,19 @@ export default function App() {
   function activity(title: string, text: string, outcome: string, effect: Partial<Stats>) {
     setEventSource({ kind: 'activity' }); setEvent({ category: 'Activity', title, text, choices: [{ label: 'Try this activity', hint: 'Make a little time for it.', outcome, effect }, { label: 'Maybe another time', hint: 'Return to your day.', outcome: 'I decided to take it easy today.' }] });
   }
+  function performSchoolAction(action:SchoolAction) {
+    if(action==='School dance'){setDanceOutcome(null);setDanceOpen(true);return;}
+    if(action==='Drop out' && life.age<16){setNotice('You must be at least 16 years old to drop out of school.');return;}
+    if(action==='Drop out' || action==='Change schools'){
+      setEventSource({kind:'activity'});setEvent({category:'School',title:action,text:action==='Drop out'?'Leave high school without a diploma?':'Ask your parents to send you to a different school?',choices:[{label:action==='Drop out'?'Drop out':'Ask my parents',hint:'See what happens.',outcome:'',schoolAction:action},{label:'Cancel',hint:'Return to school.',outcome:''}]});return;
+    }
+    finishSchoolAction(action);
+  }
+  function finishSchoolAction(action:SchoolAction) {
+    const next=schoolAction(life,action);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text.replace(/^I /,'You ').replace(/My /g,'Your ')??'');}
+    else setNotice(action==='Study harder'?'You studied harder again. Your grades and smarts already received the benefit of studying this year.':'You already did this school action this year.');
+  }
+  function resolveDance(mode:DanceMode,id?:string) {const outcome=schoolDance(life,mode,id);if(outcome.life!==life){setLife(outcome.life);setDirty(true);}setDanceOutcome(outcome);}
   function relationshipAction(id: string, action: RelationshipAction) {
     const groups = characters(life); const person = [...groups.personal, ...groups.work, ...groups.school].find(item => item.id === id);
     if (!person || actionUnavailable(life, person, action)) return;
@@ -188,14 +206,14 @@ export default function App() {
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
   function about() { setMenu(false); setNotice('Life.exe — Luna edition. Enternet Explorer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
-  const dialogTitle = notice ? 'Life.exe' : result ? 'Interaction outcome' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
+  const dialogTitle = notice ? 'Life.exe' : danceOpen ? 'School dance' : result ? 'Interaction outcome' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>
     {mode === 'desktop' ? <>
       <div className="desktop-workspace" ref={workspaceRef}>
         <DesktopIcons onOpenLife={openMyLife}/>
         {windows && windowIds.filter(id => windows[id].status !== 'closed').map(id => <FloatingWindow key={`${life.id}:${id}`} id={id} title={titles[id]} icon={icons[id]} state={windows[id]} bounds={bounds} active={activeId === id} className={`program-window program-${id.toLowerCase()}`} onFocus={() => focusWindow(id)} onChange={rect => setRect(id, rect)} onMinimize={() => minimize(id)} onMaximize={() => toggleMaximize(id)} onClose={() => closeWindow(id)}>
-          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={(action:SchoolAction)=>{setLife(previous=>schoolAction(previous,action));setDirty(true);}} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
+          {id === 'Command' ? <CommandPrompt life={life} feedRef={feedRef}/> : id === 'Explorer' ? <FileExplorer life={life} page={explorerPage} onPage={setExplorerPage} onSave={() => saveCurrent(true)} onNotice={setNotice}/> : id === 'Life' ? <MyLife life={life} dirty={dirty} onFinances={() => { setExplorerPage('Finances'); openWindow('Explorer'); }}/> : id === 'Web' ? <WebSurfer life={life} onAction={relationshipAction} onActivity={activity} onNotice={setNotice} onSave={() => saveCurrent(true)} onSchoolAction={performSchoolAction} onApplyActivity={id=>{const next=applySchoolActivity(life,id);if(next===life)return;setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}/> : <Messenger life={life} onAction={relationshipAction} onOpenLife={openMyLife}/>}
         </FloatingWindow>)}
         <div className="age-up-dock"><span className="age-dock-label">YOUR NEXT CHAPTER</span><button className="classic-button desktop-age-up" disabled={ageBlocked} onClick={ageUp}><span className="age-dock-icon" aria-hidden="true">↑</span><span><strong>Age Up</strong><small>{life.pendingEvent ? "Life event needs a decision" : `Begin age ${life.age + 1}`}</small></span><span className="age-dock-arrow" aria-hidden="true">→</span></button>{life.pendingEvent && !event && <button className="classic-button resume-life-event" onClick={resumeEvent}>Review life event…</button>}</div>
       </div>
@@ -235,7 +253,7 @@ export default function App() {
       <TitleBar title={dialogTitle} icon={modal === 'power' || modal === 'quit' ? 'power' : modal === 'restart' ? 'restart' : modal === 'new' ? 'new' : 'document'} onClose={closeModal}/>
       {notice ? <>
         <div className="modal-content information-content"><span className="info-symbol" aria-hidden="true">i</span><p>{notice}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>OK</button></div>
-      </> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className={`result-reaction-track ${result.change<0?'reaction-negative':''}`} role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`}}/></div></div>}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
+      </> : danceOpen ? <SchoolDancePanel life={life} outcome={danceOutcome} onResolve={resolveDance} onRetry={()=>setDanceOutcome(null)} onClose={closeModal}/> : result ? <><div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">Interaction outcome</span><h2>{result.title}</h2></div></div><p className="event-description">{result.text}</p>{result.meter && <div className="result-reaction"><strong>{result.meter.label}</strong><div className={`result-reaction-track ${result.change<0?'reaction-negative':''}`} role="progressbar" aria-label={result.meter.label} aria-valuenow={result.meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${result.meter.value}%`}}/></div></div>}{result.note && <p className="messenger-tip">{result.note}</p>}</div><div className="dialog-actions"><button className="classic-button" data-result-ok onClick={closeModal}>OK</button></div></> : modal === 'delete' ? <>
         <div className="modal-content"><h2>Delete {deleteTarget?.name}'s life?</h2><p>This permanently deletes this saved life from this device. This cannot be undone.</p></div><div className="dialog-actions"><button className="classic-button" onClick={deleteCharacter} disabled={!deleteTarget}>Delete life</button><button className="classic-button" autoFocus onClick={closeModal}>Cancel</button></div>
       </> : modal === 'power' ? <>
         <div className="power-content"><h2>Turn off computer</h2><div className="power-options"><button onClick={() => saveCurrent(true)}><Icon kind="save"/><span>Save</span></button><button onClick={() => dirty ? setModal('quit') : turnOff()}><Icon kind="power"/><span>Turn off</span></button><button onClick={() => setModal('restart')}><Icon kind="restart"/><span>Restart</span></button></div><p>{dirty ? 'You have unsaved changes.' : 'Your current life is saved.'}</p></div><div className="dialog-actions"><button className="classic-button" onClick={closeModal}>Cancel</button></div>
@@ -244,7 +262,7 @@ export default function App() {
       </> : modal === 'restart' ? <>
         <div className="modal-content"><h2>Restart {life.name}'s life?</h2><p>Return to age 0 with the same name and birthplace. Current stats and life history will reset.</p><p className="modal-note">The saved version stays unchanged until you save again.</p></div><div className="dialog-actions"><button className="classic-button" onClick={restart}>Restart life</button><button className="classic-button" onClick={closeModal}>Cancel</button></div>
       </> : modal === 'new' ? <form onSubmit={startLife}>
-        <div className="modal-content"><div className="dialog-intro"><Icon kind="new"/><div><h2>A new life begins</h2><p>Every story starts at age 0.</p></div></div><label htmlFor="character-first-name">First name:</label><input id="character-first-name" value={draftFirstName} onChange={e => setDraftFirstName(e.target.value)} maxLength={48} autoComplete="given-name" required/><label htmlFor="character-last-name">Last name:</label><input id="character-last-name" value={draftLastName} onChange={e => setDraftLastName(e.target.value)} maxLength={48} autoComplete="family-name" required/><label htmlFor="character-city">Starting city:</label><select id="character-city" value={draftCity} onChange={e => setDraftCity(e.target.value)}>{cityOptions.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</select><p className="modal-note">{mode === 'desktop' ? "Your current character is saved before a new life starts." : "Create your character to begin."}</p></div><div className="dialog-actions"><button className="classic-button" type="submit">Start Life</button><button className="classic-button" type="button" onClick={closeModal}>Cancel</button></div>
+        <div className="modal-content"><div className="dialog-intro"><Icon kind="new"/><div><h2>A new life begins</h2><p>Every story starts at age 0.</p></div></div><label htmlFor="character-first-name">First name:</label><input id="character-first-name" value={draftFirstName} onChange={e => setDraftFirstName(e.target.value)} maxLength={48} autoComplete="given-name" required/><label htmlFor="character-last-name">Last name:</label><input id="character-last-name" value={draftLastName} onChange={e => setDraftLastName(e.target.value)} maxLength={48} autoComplete="family-name" required/><label htmlFor="character-city">Starting city:</label><select id="character-city" value={draftCity} onChange={e => setDraftCity(e.target.value)}>{cityOptions.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</select><label htmlFor="character-sexuality">Sexuality:</label><select id="character-sexuality" value={draftSexuality} onChange={e=>setDraftSexuality(e.target.value as Sexuality)}>{(['Straight','Bisexual','Gay'] as const).map(value=><option key={value}>{value}</option>)}</select><p className="modal-note">{mode === 'desktop' ? "Your current character is saved before a new life starts." : "Create your character to begin."}</p></div><div className="dialog-actions"><button className="classic-button" type="submit">Start Life</button><button className="classic-button" type="button" onClick={closeModal}>Cancel</button></div>
       </form> : event && <div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">{eventSource.kind === 'year' ? `Beginning of age ${life.age} · ${event.category}` : event.category}</span><h2>{event.title}</h2></div></div><p className="event-description">{event.text}</p><fieldset className="event-choices"><legend>What will you do?</legend>{event.choices.map((choice, index) => <button className="classic-button choice-button" key={choice.label} disabled={choice.disabled} onClick={() => choose(choice, index)}><strong>{choice.label}</strong><small>{choice.hint}</small></button>)}</fieldset></div>}
     </dialog>
   </div>;
