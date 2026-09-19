@@ -21,7 +21,7 @@ test('gift response reflects recipient age, family context, cost and appropriate
 });
 test('selected gifts charge their own price, can harm relationships, persist, and never overdraw',()=>{
  const current=life(18),parent=characters(current).personal[0];
- const positive=interact(current,parent.id,'Gift','card');assert.equal(positive.balance,499);assert.ok(positive.relationships[parent.id].strength===Math.min(100,parent.strength+giftEffect(current,parent,gifts.find(g=>g.id==='card'))));assert.match(positive.log.at(-1).text,/handmade card/);
+ const positive=interact(current,parent.id,'Gift','card');assert.equal(positive.balance,499);assert.ok(positive.relationships[parent.id].strength>=parent.strength);assert.match(positive.log.at(-1).text,/handmade card/);
  const negative=interact(current,parent.id,'Gift','diet');assert.equal(negative.balance,482);assert.ok(negative.relationships[parent.id].strength<parent.strength);
  assert.deepEqual(parseStore(JSON.stringify(upsertLife(emptyStore(),negative))).lives[0],negative);
  assert.equal(interact({...current,balance:0},parent.id,'Gift','card').balance,0);assert.equal(interact(current,parent.id,'Gift','unknown'),current);

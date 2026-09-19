@@ -19,9 +19,9 @@ test('applying above sixty rejects jobs and activities without attempts, money o
 test('more hours and raises depend on tenure and performance, save and never exceed twenty or sixty; requests and training apply once yearly',()=>{
  assert.ok(workRequestChance(5,90)>workRequestChance(0,50));let hoursWon=false,raiseWon=false;
  for(let i=0;i<100;i++){const hired=takePartTimeJob(life(16,`request-${i}`),'library-aide');hired.occupation.job.performance=90;hired.occupation.job.startAge=14;hired.occupation.job.weeklyHours=10;hired.occupation.job.hours='Part-time · 10 hours / week';
- const hours=workAction(hired,'Hours');assert.ok(hours.life.occupation.job.weeklyHours<=20);assert.ok(scheduleHours(hours.life)<=60);assert.equal(workAction(hours.life,'Hours').life,hours.life);saved(hours.life);hoursWon ||=hours.life.occupation.job.weeklyHours>10;
+ const hours=workAction(hired,'Hours');assert.ok(hours.life.occupation.job.weeklyHours<=20);assert.ok(scheduleHours(hours.life)<=60);const retryHours=workAction(hours.life,'Hours').life;assert.equal(retryHours.stats.Happiness,hours.life.stats.Happiness);saved(hours.life);hoursWon ||=hours.life.occupation.job.weeklyHours>10;
  const raise=workAction(hired,'Raise');raiseWon ||=raise.life.occupation.job.hourlyWage>hired.occupation.job.hourlyWage;assert.equal(workAction(raise.life,'Raise').life,raise.life);saved(raise.life);
- const trained=workAction(hired,'Work harder');assert.equal(trained.life.occupation.job.performance,95);assert.equal(workAction(trained.life,'Work harder').life,trained.life);assert.equal(workAction(hired,'Resign').life.occupation.job,null);
+ const trained=workAction(hired,'Work harder');assert.equal(trained.life.occupation.job.performance,100);assert.equal(workAction(trained.life,'Work harder').life,trained.life);assert.equal(workAction(hired,'Resign').life.occupation.job,null);
  }
  assert.ok(hoursWon && raiseWon);
  const hired=takePartTimeJob(life(),'library-aide'),remaining=20-hired.occupation.job.weeklyHours;const l={...hired,occupation:{...hired.occupation,school:{...hired.occupation.school,memberships:remaining?['chess']:[],activityDetails:remaining?{chess:{...newMembership(16),hours:remaining}}:{}}}};saved(l);assert.equal(scheduleHours(l),60);assert.equal(workAction(l,'Hours').life,l);

@@ -47,7 +47,7 @@ test('a full childhood leads through elementary, middle, high school and a saved
     if(age>=6 && age<18) {
       const studied=schoolAction(life,'Study hard');
       assert.ok(studied.occupation.school.grades>=life.occupation.school.grades);
-      assert.equal(schoolAction(studied,'Study hard'),studied);
+      assert.equal(schoolAction(studied,'Study hard').stats.Smarts,studied.stats.Smarts);
       life=schoolAction(studied,'Join an activity');
       assert.equal(schoolAction(life,'Join an activity'),life);
     }

@@ -20,13 +20,13 @@ export const scheduleHours=(life:Life,occupation:Occupation=getOccupation(life))
 const clamp=(value:number)=>Math.max(0,Math.min(100,value));
 export const dismissalChance=(performance:number)=>performance>=50?0:Math.min(.9,(50-performance)/60);
 export function advanceCommitments(before:Life,after:Life):Life {
- const hours=scheduleHours(before),overload=Math.max(0,hours-60),penalty=Math.ceil(overload/5);
+ const hours=scheduleHours(before),overload=Math.max(0,hours-60),overloaded=overload>0;
  const occupation=after.occupation?{...after.occupation}:getOccupation(after),school=occupation.school?{...occupation.school}:null;
- if(occupation.job)occupation.job={...occupation.job,performance:clamp(occupation.job.performance+(occupation.job.hourlyWage!==undefined || /part[- ]?time/i.test(occupation.job.hours)?10:2)-penalty)};
+ if(occupation.job)occupation.job={...occupation.job,performance:clamp(occupation.job.performance+(occupation.job.hourlyWage!==undefined || /part[- ]?time/i.test(occupation.job.hours)?10:2)-(overloaded?20:0))};
  const log=[...after.log];
  if(overload)log.push({age:after.age,tag:'LIFE',text:`My ${hours}-hour weekly schedule left me overwhelmed.`});
- if(school){school.grades=clamp(school.grades-penalty);const details:Record<string,Membership>={},retained:string[]=[];
- for(const id of school.memberships??[]){const activity=schoolActivities.find(a=>a.id===id);if(!activity)continue;const old=membershipInfo(before.occupation?.school??getOccupation(before).school??school,id,before.age);const performance=clamp(old.performance+old.hours-penalty),years=after.age-old.joinAge;
+ if(school){school.grades=clamp(school.grades-(overloaded?20:0));const details:Record<string,Membership>={},retained:string[]=[];
+ for(const id of school.memberships??[]){const activity=schoolActivities.find(a=>a.id===id);if(!activity)continue;const old=membershipInfo(before.occupation?.school??getOccupation(before).school??school,id,before.age);const performance=clamp(old.performance+old.hours-(overloaded?20:0)),years=after.age-old.joinAge;
   if(seededRandom(`${before.id}:dismiss:${id}:${after.age}`)()<dismissalChance(performance)){log.push({age:after.age,tag:'EDUCATION',text:`I was removed from the ${schoolActivityName(activity,before.family?.gender)} because of my low performance.`});continue;}
   const rank=performance>=80 && years>=2?2:performance>=65 && years>=1?Math.max(1,old.rank):old.rank;
   if(rank>old.rank)log.push({age:after.age,tag:'EDUCATION',text:`I was promoted to ${membershipRank(activity.group,rank)} in the ${schoolActivityName(activity,before.family?.gender)}.`});
@@ -34,5 +34,5 @@ export function advanceCommitments(before:Life,after:Life):Life {
  }
  school.memberships=retained;school.activityDetails=details;occupation.school=school;
  }
- return {...after,occupation,stats:{...after.stats,Happiness:clamp(after.stats.Happiness-penalty)},log};
+ return {...after,occupation,stats:{...after.stats,Happiness:clamp(after.stats.Happiness-(overloaded?10:0)),Health:clamp(after.stats.Health-(overloaded?5:0))},log};
 }

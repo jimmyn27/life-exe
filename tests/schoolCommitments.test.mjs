@@ -17,8 +17,8 @@ test('accepted memberships start at fifty performance, first rank, zero years an
 });
 test('practice/work increase performance once a year, hours stay within bounds, and quit removes membership and schedule hours',()=>{
  const current=enrolled(['chess','basketball']);assert.equal(scheduleHours(current),50);
- const trained=manageSchoolActivity(current,'basketball','Train');assert.equal(trained.occupation.school.activityDetails.basketball.performance,55);assert.equal(manageSchoolActivity(trained,'basketball','Train'),trained);
- const club=manageSchoolActivity(trained,'chess','Train');assert.equal(club.occupation.school.activityDetails.chess.performance,55);
+ const trained=manageSchoolActivity(current,'basketball','Train');assert.equal(trained.occupation.school.activityDetails.basketball.performance,60);assert.equal(manageSchoolActivity(trained,'basketball','Train').occupation.school.activityDetails.basketball.performance,60);
+ const club=manageSchoolActivity(trained,'chess','Train');assert.equal(club.occupation.school.activityDetails.chess.performance,60);
  const busy=manageSchoolActivity(club,'chess','Hours',10);assert.equal(scheduleHours(busy),55);assert.equal(manageSchoolActivity(busy,'chess','Hours',0),busy);assert.equal(manageSchoolActivity(busy,'chess','Hours',11),busy);
  const quit=manageSchoolActivity(busy,'chess','Quit');assert.ok(!quit.occupation.school.memberships.includes('chess'));assert.ok(!quit.occupation.school.activityDetails.chess);assert.equal(scheduleHours(quit),45);assert.deepEqual(saved(quit),quit);
 });
@@ -28,16 +28,16 @@ test('weekly hours each add one yearly performance point and promotions factor i
 });
 test('schedule includes school, every membership and employment; sixty is safe and excess hurts happiness, grades and performance',()=>{
  const current=enrolled(['basketball','chess','science','soccer']);assert.equal(scheduleHours(current),60);const normal=advanceYear(current);assert.equal(normal.stats.Happiness,60);assert.equal(normal.occupation.school.grades,60);assert.equal(normal.occupation.school.activityDetails.chess.performance,55);
- const busy=enrolled(['basketball','chess','science','soccer','art']);for(const detail of Object.values(busy.occupation.school.activityDetails))detail.performance=70;assert.equal(scheduleHours(busy),65);const stressed=advanceYear(busy);assert.equal(stressed.stats.Happiness,59);assert.equal(stressed.occupation.school.grades,59);assert.equal(stressed.occupation.school.activityDetails.chess.performance,74);assert.ok(stressed.log.some(l=>l.text.includes('overwhelmed')));saved(stressed);
+ const busy=enrolled(['basketball','chess','science','soccer','art']);for(const detail of Object.values(busy.occupation.school.activityDetails))detail.performance=70;assert.equal(scheduleHours(busy),65);const stressed=advanceYear(busy);assert.equal(stressed.stats.Happiness,50);assert.equal(stressed.occupation.school.grades,40);assert.equal(stressed.occupation.school.activityDetails.chess.performance,55);assert.ok(stressed.log.some(l=>l.text.includes('overwhelmed')));saved(stressed);
  busy.occupation.job={position:'Assistant',employer:'Store',salary:10000,performance:50,startAge:14,hours:'Part time · 15 hours / week'};assert.equal(scheduleHours(busy),80);
 });
 test('low performance has increasing yearly dismissal risk while fifty and above remain safe',()=>{
  assert.equal(dismissalChance(50),0);assert.ok(dismissalChance(5)>dismissalChance(40));let removed=0;
  for(let i=0;i<50;i++){const current=enrolled(['chess'],14,`dismiss-${i}`);current.occupation.school.activityDetails.chess.performance=0;const next=advanceYear(current);if(!next.occupation.school.memberships.includes('chess')){removed++;assert.ok(!next.occupation.school.activityDetails.chess);assert.ok(next.log.some(l=>l.text.includes('removed')));}saved(next);}assert.ok(removed>20 && removed<50);
 });
-test('sucking up slightly reduces every classmate relationship and popularity only on the first interaction',()=>{
+test('sucking up by five reduces every classmate relationship and popularity only on the first interaction',()=>{
  const current=life(),people=characters(current),staff=people.school.find(p=>p.relation==='Teacher'),peers=people.school.filter(p=>p.relation==='Classmate');const before=getOccupation(current).school.popularity,after=interact(current,staff.id,'Suck up');
- for(const peer of peers)assert.equal(after.relationships[peer.id].strength,peer.strength-1);assert.ok(after.occupation.school.popularity<before);const repeated=interact(after,staff.id,'Suck up');for(const peer of peers)assert.equal(repeated.relationships[peer.id].strength,after.relationships[peer.id].strength);saved(after);
+ for(const peer of peers)assert.equal(after.relationships[peer.id].strength,peer.strength-5);assert.ok(after.occupation.school.popularity<before);const repeated=interact(after,staff.id,'Suck up');for(const peer of peers)assert.equal(repeated.relationships[peer.id].strength,after.relationships[peer.id].strength);saved(after);
 });
 test('classmate grades start at smarts, fluctuate annually and reset at stage transition; sports add more popularity than clubs',()=>{
  const peer={id:'npc-student',name:'Alex Smith',gender:'Male',ageOffset:0,relation:'Classmate',group:'Classmates',strength:50};const initial=advanceClassmate(peer,'npc-life',6);assert.equal(initial.grades,npcBaseStats(peer.id).Smarts);

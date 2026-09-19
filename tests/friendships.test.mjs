@@ -18,17 +18,17 @@ test('family starts at one hundred; looks bias is bounded and contact values per
  const employed=initializeWorkRelationships({...l,occupation:{...getOccupation(l),job:libraryJob(14)}});assert.deepEqual(characters({...employed,stats:{...l.stats,Looks:0}}).work.map(p=>p.strength),characters(employed).work.map(p=>p.strength));
 });
 test('befriending improves strength; friends decay five per year while family and partners do not',()=>{
- const l=life(),peer=characters(l).school.find(p=>p.relation==='Classmate');const befriended=interact(l,peer.id,'Befriend');assert.equal(befriended.relationships[peer.id].strength,peer.strength+5);
- befriended.relationships.partner={...friend('Partner',80),status:'dating'};const next=advanceFriendships({...befriended,age:15}).life;assert.equal(next.relationships[peer.id].strength,befriended.relationships[peer.id].strength-5);assert.equal(next.relationships.partner.strength,80);assert.equal(characters(next).personal.find(p=>p.parent).strength,100);
+ const l=life(),peer=characters(l).school.find(p=>p.relation==='Classmate');l.relationships={[peer.id]:{strength:100,status:'acquaintance',stats:peer.stats}};const befriended=interact(l,peer.id,'Befriend');assert.equal(befriended.relationships[peer.id].strength,100);assert.equal(befriended.stats.Happiness,95);
+ befriended.relationships.partner={...friend('Partner',80),status:'dating'};const next=advanceFriendships({...befriended,age:15}).life;assert.equal(next.relationships[peer.id].strength,befriended.relationships[peer.id].strength-5);assert.equal(next.relationships.partner.strength,75);assert.equal(characters(next).personal.find(p=>p.parent).strength,100);
 });
 test('multiple friendship decisions queue before the yearly event, persist, and must be completed one by one',()=>{
  let next;for(let i=0;i<100;i++){const l={...life(14,`queue-${i}`),relationships:{a:friend('Anna',5),b:friend('Beth',5)}};const n=advanceYear(l);if(n.pendingEvent.event.choices[0].friendshipDecision && n.pendingEvent.queue?.[0].choices[0].friendshipDecision){next=n;break;}}
  assert.ok(next);next=saved(next);assert.equal(advanceYear(next),next);const firstId=next.pendingEvent.event.choices[1].friendshipDecision.id;
- next=answerLifeEvent(next,1);assert.equal(next.relationships[firstId].friendship,false);assert.equal(next.stats.Happiness,67);assert.equal(next.pendingEvent.event.category,'Friendship');
- next=answerLifeEvent(saved(next),1);assert.equal(next.stats.Happiness,64);assert.ok(next.pendingEvent);next=answerLifeEvent(next,0);assert.equal(next.pendingEvent,undefined);
+ next=answerLifeEvent(next,1);assert.equal(next.relationships[firstId].friendship,false);assert.equal(next.stats.Happiness,60);assert.equal(next.pendingEvent.event.category,'Friendship');
+ next=answerLifeEvent(saved(next),1);assert.equal(next.stats.Happiness,50);assert.ok(next.pendingEvent);next=answerLifeEvent(next,0);assert.equal(next.pendingEvent,undefined);
 });
 test('salvage successes restore friendship and happiness; failures cost more happiness than wishing well',()=>{
- let success=false,failure=false;for(let i=0;i<100;i++){const l={...life(15,`salvage-${i}`),relationships:{f:friend('Friend',30)}};const n=resolveFriendship(l,'f',true);if(n.relationships.f.friendship){success=true;assert.equal(n.relationships.f.strength,40);assert.equal(n.stats.Happiness,73);}else{failure=true;assert.equal(n.stats.Happiness,65);}assert.equal(resolveFriendship(l,'f',false).stats.Happiness,67);}assert.ok(success && failure);
+ let success=false,failure=false;for(let i=0;i<100;i++){const l={...life(15,`salvage-${i}`),relationships:{f:friend('Friend',30)}};const n=resolveFriendship(l,'f',true);if(n.relationships.f.friendship){success=true;assert.equal(n.relationships.f.strength,40);assert.equal(n.stats.Happiness,80);}else{failure=true;assert.equal(n.stats.Happiness,50);}assert.equal(resolveFriendship(l,'f',false).stats.Happiness,60);}assert.ok(success && failure);
 });
 test('dating begins at ten, blocks minor/adult pairing, and intimacy is adult-only with partner action replacement',()=>{
  for(const age of [9,10,16,18]){const l=life(age),p=characters(l).school.find(p=>p.relation==='Classmate')??{...characters(l).personal[0],parent:false,family:false,relation:'Friend',occupation:'Student',friendship:true,age};assert.equal(Boolean(actionUnavailable(l,p,'Ask out')),age<10);if(age<18)assert.ok(actionUnavailable(l,p,'Make love'));if(age<16)assert.ok(actionUnavailable(l,p,'Have fun'));assert.ok(actionUnavailable(l,{...p,age:age<18?18:17},'Ask out'));}

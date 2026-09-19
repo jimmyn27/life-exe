@@ -4,8 +4,8 @@ import {advanceSchoolRoster,initialSchoolRoster,type SchoolPerson} from './schoo
 import { familyMoney, seededRandom } from './family.ts';
 import type { Life } from './saves';
 
-export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; activityDetails?:Record<string,import('./schoolCommitments').Membership>; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean}> };
-export type Job = { actionAge?:number;usedActions?:import('./partTimeWork').WorkAction[];id?:string;hourlyWage?:number;weeklyHours?:number; position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
+export type School = { name: string; level: 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; startAge: number; duration: number; grades: number; popularity: number; transfers?:number; danceAskedIds?:string[]; yearActions?: SchoolAction[]; roster?: SchoolPerson[]; activityDetails?:Record<string,import('./schoolCommitments').Membership>; memberships?: string[]; activityAttempts?: Record<string,{age:number;accepted:boolean;count?:number}> };
+export type Job = { actionAge?:number;usedActions?:import('./partTimeWork').WorkAction[];hoursRequestRejectedAge?:number;id?:string;hourlyWage?:number;weeklyHours?:number; position: string; employer: string; salary: number; performance: number; startAge: number; hours: string };
 export type Occupation = { highestEducation: 'None' | 'Primary school' | 'Middle school' | 'Secondary school' | 'University'; school: School | null; job: Job | null; droppedOut?:boolean };
 export const university = (age: number): School => ({ name: 'Northbridge University', level: 'University', startAge: age, duration: 4, grades: 78, popularity: 64 });
 export const libraryJob = (age: number): Job => ({ position: 'Library assistant', employer: 'Riverside Library', salary: 32000, performance: 72, startAge: age, hours: 'Full time · 35 hours / week' });
@@ -67,14 +67,15 @@ export function schoolName(_life: Life, school: School): string { return school.
 export function schoolAction(life: Life, requested: SchoolAction): Life {
  const action=requested==='Study hard'?'Study harder':requested,occupation=getOccupation(life),school=occupation.school;
  if(life.pendingEvent || !school || ![...schoolActions(life.age),'Join an activity'].includes(action) || action==='Join an activity' && life.age<10 || action==='Drop out' && life.age<16 || action==='School dance')return life;
- if(school.yearActions?.includes(action) || action==='Study harder' && school.yearActions?.includes('Study hard'))return life;
- const stats={...life.stats},nextSchool={...school,yearActions:[...(school.yearActions??[]),action]},nextOccupation:Occupation={...occupation,school:nextSchool};
+ const used=school.yearActions?.includes(action) || action==='Study harder' && school.yearActions?.includes('Study hard');
+ if(used && !['Study harder','Nurse','Skip school'].includes(action))return life;
+ const stats={...life.stats},nextSchool={...school,yearActions:used?[...(school.yearActions??[])]:[...(school.yearActions??[]),action]},nextOccupation:Occupation={...occupation,school:nextSchool};
  const random=seededRandom(`${life.id}:school-action:${life.age}:${action}`);
  let text='';
- if(action==='Study harder'){stats.Smarts=clamp(stats.Smarts+2);nextSchool.grades=clamp(school.grades+5);text='I studied harder and improved my grades and smarts.';}
+ if(action==='Study harder'){if(!used){stats.Smarts=clamp(stats.Smarts+1);stats.Happiness=clamp(stats.Happiness-5);nextSchool.grades=clamp(school.grades+10);}text=used?'I studied more, but had already gained the benefit this year.':'I studied harder and improved my grades and smarts.';}
  if(action==='Join an activity'){stats.Happiness=clamp(stats.Happiness+2);text='I joined a school activity.';}
- if(action==='Nurse'){stats.Health=clamp(stats.Health+5);text='I visited the school nurse and felt healthier.';}
- if(action==='Skip school'){stats.Happiness=clamp(stats.Happiness+4);if(random()<.4)stats.Smarts=clamp(stats.Smarts-2);nextSchool.grades=clamp(school.grades-5);text='I skipped school. It was fun, but my grades suffered.';}
+ if(action==='Nurse'){text=used?'The school nurse reprimanded me for trying to waste time in her office.':'The school nurse examined me and determined that I was fine.';}
+ if(action==='Skip school'){if(!used){stats.Happiness=clamp(stats.Happiness+5);stats.Smarts=clamp(stats.Smarts-1);nextSchool.grades=clamp(school.grades-5);}text=used?'I skipped school again, but it did not affect my stats further.':'I skipped school. It was fun, but my grades and smarts suffered.';}
  if(action==='Drop out'){nextOccupation.school=null;nextOccupation.droppedOut=true;text='I dropped out of high school without a diploma.';}
  if(action==='Change schools'){
   const parents=life.family?.parents??[];const relationship=parents.length?parents.reduce((sum,p)=>sum+(life.relationships?.[p.id]?.strength??(p.relation==='Mother'?86:79)),0)/parents.length:70;

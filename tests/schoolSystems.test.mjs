@@ -50,7 +50,7 @@ test('acquaintances must be befriended before unfriending; friends persist when 
 test('clubs and sports have persisted random decisions with one attempt per year and memberships carry until school changes',()=>{
  assert.ok(schoolActivities.some(a=>a.group==='Clubs') && schoolActivities.some(a=>a.group==='Sports'));
  assert.strictEqual(applySchoolActivity(life(11),'chess').age,11);assert.strictEqual(applySchoolActivity(life(18),'chess').age,18);
- let current=life(12);for(const activity of schoolActivities){const next=applySchoolActivity(current,activity.id);if(scheduleHours(current)+5>60){assert.strictEqual(next,current);continue;}assert.notStrictEqual(next,current);assert.deepEqual(applySchoolActivity(current,activity.id),next);assert.strictEqual(applySchoolActivity(next,activity.id),next);current=next;}
+ let current=life(12);for(const activity of schoolActivities){const next=applySchoolActivity(current,activity.id);if(scheduleHours(current)+5>60){assert.strictEqual(next,current);continue;}assert.notStrictEqual(next,current);const second=applySchoolActivity(current,activity.id);assert.deepEqual(second,next);if(!next.occupation.school.activityAttempts[activity.id].accepted){const stopped=applySchoolActivity(next,activity.id);assert.notStrictEqual(stopped,next);assert.strictEqual(applySchoolActivity(stopped,activity.id),stopped);current=stopped;}else current=next;}
  const loaded=saved(current);assert.deepEqual(loaded.occupation.school.activityAttempts,current.occupation.school.activityAttempts);const enrolled=current.occupation.school.memberships;assert.ok(enrolled.length>0);
  const next=answer(advanceYear(loaded));assert.ok(next.occupation.school.memberships.every(id=>enrolled.includes(id)));assert.deepEqual(next.occupation.school.activityAttempts,{});
  current={...loaded,age:13};current=answer(advanceYear(current));assert.deepEqual(current.occupation.school.memberships,[]);assert.equal(current.occupation.school.activityAttempts,undefined);
@@ -76,9 +76,9 @@ test('school staff actions change on befriending and survive saved contact profi
  for(const action of ['Act up','Disrespect','Suck up']){
   const changed=interact(current,teacher.id,action);assert.notEqual(changed,current);assert.match(changed.log.at(-1).text,new RegExp(personAddress(teacher,'first').replaceAll('.','\\.')));
   assert.deepEqual(saved(changed).relationships,changed.relationships);
-  const repeated=interact(changed,teacher.id,action);assert.equal(repeated.relationships[teacher.id].strength,changed.relationships[teacher.id].strength);
+  const repeated=interact(changed,teacher.id,action);if(action==='Suck up')assert.equal(repeated.relationships[teacher.id].strength,changed.relationships[teacher.id].strength);else assert.ok(repeated.relationships[teacher.id].strength<=changed.relationships[teacher.id].strength);
  }
- const friends=saved(interact(current,teacher.id,'Befriend'));
+ const certain={...current,relationships:{[teacher.id]:{strength:100,status:'acquaintance',stats:teacher.stats}}};const friends=saved(interact(certain,teacher.id,'Befriend'));
  const personalTeacher=characters(friends).personal.find(p=>p.id===teacher.id);
  assert.deepEqual(availableActions(personalTeacher,friends),['Act up','Compliment','Conversation','Gift','Insult','Spend time','Unfriend']);
  assert.equal(interact(friends,teacher.id,'Disrespect'),friends);

@@ -24,7 +24,7 @@ import { activateWindow, createDesktopWindows, fitRect, minimumSize, taskbarWind
 import { clearPrototypeSaves, emptyStore, lifeDate, loadStore, persistStore, restartLife, upsertLife, type Life, type SaveStore, type Sexuality } from './saves';
 import { generateFamily } from './family';
 import { schoolAction,getOccupation,nextSchoolName,schoolName, type SchoolAction } from './occupation';
-import { characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
+import { declineInvitation, characters, interact, actionUnavailable, type RelationshipAction } from './relationships';
 import { advanceYear, answerLifeEvent } from './mail';
 import { cityById, cityOptions, DEFAULT_CITY_ID, displayCity, resolveCity, US_SNAPSHOT } from './catalogs/us/index';
 
@@ -170,6 +170,7 @@ export default function App() {
       setLife(previous => answerLifeEvent(previous, index)); setDirty(true); setEvent(null);
       return;
     }
+    if(choice.relationshipResponse){const next=declineInvitation(life,choice.relationshipResponse.id);setLife(next);setDirty(true);setEvent(null);return;}
     if(choice.jobDecision){const next=takePartTimeJob(life,choice.jobDecision.id);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}setEvent(null);return;}
     if(choice.membershipAction){setEvent(null);finishMembershipAction(choice.membershipAction.id,choice.membershipAction.action);return;}
     if(choice.schoolAction){setEvent(null);finishSchoolAction(choice.schoolAction);return;}

@@ -1,0 +1,15 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {characters,interact,declineInvitation} from '../src/relationships.ts';
+import {reaction,interactionResult} from '../src/interactionResults.ts';
+const life=(id='balance',age=18)=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:1000,sexuality:'Bisexual',stats:{Health:80,Happiness:80,Smarts:80,Looks:80},log:[]});
+test('continuous social scales change both participants exactly and first-limited actions do not reapply',()=>{
+ for(const action of ['Compliment','Conversation','Flirt']){const before=life(`scale-${action}`),person=characters(before).personal.find(p=>p.id==='maya-chen'),response=reaction(before,person,action),after=interact(before,person.id,action);assert.ok(Number.isInteger(response.delta));assert.ok(response.delta>=(action==='Compliment'?0:action==='Conversation'?-5:-10));assert.ok(response.delta<=(action==='Compliment'?25:action==='Conversation'?10:25));assert.equal(after.relationships[person.id].strength,Math.min(100,person.strength+response.delta));assert.equal(after.stats.Happiness,Math.max(0,Math.min(100,before.stats.Happiness+(action==='Compliment'?0:response.delta))));assert.equal(after.relationships[person.id].stats.Happiness,Math.max(0,Math.min(100,person.stats.Happiness+response.delta)));const repeat=interact(after,person.id,action);assert.equal(repeat.relationships[person.id].strength,after.relationships[person.id].strength);}
+});
+test('insults always apply and an incoming date rejection only hurts the inviter',()=>{
+ const before=life('always'),person=characters(before).personal.find(p=>p.id==='maya-chen'),once=interact(before,person.id,'Insult'),twice=interact(once,person.id,'Insult');assert.equal(once.relationships[person.id].strength,person.strength-20);assert.equal(twice.relationships[person.id].strength,person.strength-40);assert.equal(twice.stats.Happiness,before.stats.Happiness);assert.equal(twice.relationships[person.id].stats.Happiness,person.stats.Happiness-20);
+ const declined=declineInvitation(before,person.id);assert.equal(declined.stats.Happiness,before.stats.Happiness);assert.equal(declined.relationships[person.id].strength,person.strength-10);assert.equal(declined.relationships[person.id].stats.Happiness,person.stats.Happiness-25);
+});
+test('compliments and insults can create the requested second popup',()=>{
+ let compliment=false,insult=false;for(let i=0;i<1000 && !(compliment&&insult);i++){const before=life(`follow-${i}`),person=characters(before).personal.find(p=>p.id==='maya-chen');before.relationships={[person.id]:{strength:100,status:'friend',stats:person.stats}};const p=characters(before).personal.find(q=>q.id===person.id);const c=interact(before,p.id,'Compliment'),ci=interactionResult(before,c,p,'Compliment');compliment ||= ci.followUp?.choices[0].effect?.Happiness===10;const n=interact(before,p.id,'Insult'),ni=interactionResult(before,n,p,'Insult');insult ||= Boolean(ni.followUp);}assert.ok(compliment&&insult);
+});
