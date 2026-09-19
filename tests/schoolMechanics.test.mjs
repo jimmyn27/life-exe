@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getOccupation,advanceOccupation,schoolAction,schoolActions,schoolPopularity} from '../src/occupation.ts';
-import {characters,interact} from '../src/relationships.ts';
+import {characters,interact,relationshipRoleLabel} from '../src/relationships.ts';
 import {reaction,interactionResult} from '../src/interactionResults.ts';
 import {applySchoolActivity,schoolActivities} from '../src/schoolActivities.ts';
 import {schoolDance} from '../src/schoolDance.ts';
 import {attractedTo,npcSexuality} from '../src/preferences.ts';
-import {generateFamily} from '../src/family.ts';
+import {generateFamily,seededRandom} from '../src/family.ts';
 import {parseStore,upsertLife,emptyStore,restartLife} from '../src/saves.ts';
 import {advanceYear,answerLifeEvent} from '../src/mail.ts';
 const life=(age=14,id='school-mechanics')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Straight',stats:{Health:70,Happiness:60,Intelligence:60,Charisma:60},log:[]});
@@ -21,12 +21,45 @@ test('popularity is average classmate relationship strength, excluding staff, an
  current.occupation=occupation;current.relationships=Object.fromEntries(roster.map(p=>[p.id,{strength:p.relation==='Classmate'?40:100,status:'acquaintance',stats:current.stats}]));
  assert.equal(getOccupation(current).school.popularity,40);const next=interact(current,peers[0].id,'Insult');assert.equal(next.occupation.school.popularity,schoolPopularity(next,next.occupation.school));assert.ok(next.occupation.school.popularity<40);
 });
-test('positive staff appreciation/agreement improves grades; repeat and low reactions do not add grades',()=>{
- for(const action of ['Compliment','Conversation','Suck up']){let positive=0,negative=0;
- for(let i=0;i<30;i++){const before=life(14,`staff-${i}`),teacher=characters(before).school.find(p=>p.relation==='Teacher'),response=reaction(before,teacher,action),after=interact(before,teacher.id,action),gain=after.occupation.school.grades-getOccupation(before).school.grades;
- assert.equal(gain,response.delta>0?Math.min(action==='Suck up'?10:5,response.delta):response.delta);if(response.delta>0)positive++;else negative++;
- assert.equal(interact(after,teacher.id,action).occupation.school.grades,after.occupation.school.grades);if(action==='Suck up')assert.match(interactionResult(before,after,teacher,action).meter.label,/appreciation/);
- }assert.ok(positive>0);}
+test('staff interactions use their exact grade ranges and only first-limited actions repeat',()=>{
+ const expected=(action,response,accepted=true)=>action==='Act up'?-10:action==='Befriend'?(accepted?5:0):action==='Compliment'?Math.round(response.value*2/100):action==='Conversation'?-2+Math.round(response.value*4/100):action==='Gift'?-5+Math.round(response.value*10/100):action==='Disrespect'?-20:action==='Insult'?-15:action==='Suck up'?Math.min(10,Math.max(0,response.delta)):action==='Spend time'?2:0;
+ for(const action of ['Compliment','Conversation','Gift','Suck up','Act up','Disrespect','Insult']){
+  for(let i=0;i<30;i++){const before=life(14,`staff-${action}-${i}`),teacher=characters(before).school.find(p=>p.relation==='Teacher'),response=reaction(before,teacher,action),after=interact(before,teacher.id,action),gain=after.occupation.school.grades-getOccupation(before).school.grades;
+   assert.equal(gain,expected(action,response));const repeated=interact(after,teacher.id,action);if(['Compliment','Conversation','Gift','Suck up'].includes(action))assert.equal(repeated.occupation.school.grades,after.occupation.school.grades);
+  }
+ }
+ for(const accepted of [false,true]){const before=life(14,`staff-befriend-${accepted}`),teacher=characters(before).school.find(p=>p.relation==='Teacher');before.relationships={[teacher.id]:{strength:accepted?100:0,status:'acquaintance',stats:teacher.stats}};const after=interact(before,teacher.id,'Befriend');assert.equal(after.occupation.school.grades-getOccupation(before).school.grades,accepted?5:0);}
+ const before=life(14,'staff-friend-actions'),teacher=characters(before).school.find(p=>p.relation==='Teacher');before.relationships={[teacher.id]:{strength:100,status:'acquaintance',stats:teacher.stats}};const friend=interact(before,teacher.id,'Befriend'),friendTeacher=characters(friend).school.find(p=>p.id===teacher.id);
+ const spent=interact(friend,teacher.id,'Spend time');assert.equal(spent.occupation.school.grades-friend.occupation.school.grades,2);assert.equal(interact(spent,friendTeacher.id,'Unfriend').occupation.school.grades,spent.occupation.school.grades);
+});
+test('social charisma effects roll independently at fifty percent and never exceed one point',()=>{
+ for(const scenario of [
+  {name:'accepted friendship',action:'Befriend',strength:100,expected:[0,1]},
+  {name:'rejected friendship',action:'Befriend',strength:0,expected:[-1,0]},
+  {name:'rejected date',action:'Ask out',strength:0,expected:[-1,0]},
+  {name:'insult',action:'Insult',strength:50,expected:[-1,0]}
+ ]){
+  const seen=new Set();
+  for(let i=0;i<160;i++){const before={...life(14,`charisma-${scenario.name}-${i}`),sexuality:'Bisexual'},peer=characters(before).school.find(p=>p.relation==='Classmate');before.relationships={[peer.id]:{strength:scenario.strength,status:'acquaintance',stats:peer.stats}};const after=interact(before,peer.id,scenario.action),change=after.stats.Charisma-before.stats.Charisma;assert.ok(scenario.expected.includes(change));seen.add(change);}
+  assert.deepEqual([...seen].sort((a,b)=>a-b),scenario.expected);
+ }
+ let highChanged=0,highHeld=0,lowChanged=0,lowHeld=0;
+ for(let i=0;i<240;i++){for(const high of [false,true]){const before=life(14,`charisma-meter-${high}-${i}`),teacher=characters(before).school.find(p=>p.relation==='Teacher');before.relationships={[teacher.id]:{strength:high?100:0,status:'acquaintance',stats:teacher.stats}};const currentTeacher=characters(before).school.find(p=>p.id===teacher.id),response=reaction(before,currentTeacher,'Compliment');if(high&&response.value<=75||!high&&response.value>25)continue;const change=interact(before,teacher.id,'Compliment').stats.Charisma-before.stats.Charisma;if(high)change===1?highChanged++:highHeld++;else change===-1?lowChanged++:lowHeld++;}
+ }
+ assert.ok(highChanged>0&&highHeld>0&&lowChanged>0&&lowHeld>0,JSON.stringify({highChanged,highHeld,lowChanged,lowHeld}));
+});
+test('school dance acceptance and rejection each use a fifty percent one-point charisma roll',()=>{
+ const acceptedChanges=new Set(),rejectedChanges=new Set();
+ for(let i=0;i<160;i++){
+  const varied=Math.floor(seededRandom('dance-test-id-'+i)()*1_000_000_000).toString(36),acceptedLife={...life(16,'dance-charisma-yes-'+varied),sexuality:'Bisexual'},partner=characters(acceptedLife).school.find(p=>p.relation==='Classmate');acceptedLife.relationships={[partner.id]:{profile:{name:partner.name,gender:partner.gender,ageOffset:0,education:partner.education,occupation:partner.occupation},strength:70,status:'dating',friendship:true,stats:partner.stats}};
+  const accepted=schoolDance(acceptedLife,'partner');assert.equal(accepted.accepted,true);acceptedChanges.add(accepted.life.stats.Charisma-acceptedLife.stats.Charisma);
+  const rejectedLife=life(16,'dance-charisma-no-'+varied),peer=characters(rejectedLife).school.find(p=>p.gender==='Male'&&p.relation==='Classmate'),rejected=schoolDance(rejectedLife,'classmate',peer.id);assert.equal(rejected.accepted,false);rejectedChanges.add(rejected.life.stats.Charisma-rejectedLife.stats.Charisma);
+ }
+ assert.deepEqual([...acceptedChanges].sort((a,b)=>a-b),[0,1]);assert.deepEqual([...rejectedChanges].sort((a,b)=>a-b),[-1,0]);
+ const solo=life(16,'dance-charisma-solo'),alone=schoolDance(solo,'alone');assert.equal(alone.life.stats.Charisma,solo.stats.Charisma);
+});test('contextual school and work labels show Friend without replacing the underlying role',()=>{
+ const current=life(),classmate=characters(current).school.find(p=>p.relation==='Classmate'),friend={...classmate,friendship:true,status:'friend'};
+ assert.equal(relationshipRoleLabel(friend,true),'Friend');assert.equal(relationshipRoleLabel(friend,false),'Classmate');assert.equal(friend.relation,'Classmate');
 });
 test('school actions have stage ordering, dropout age gates, nurse recovery and skip-school effects',()=>{
  assert.deepEqual(schoolActions(6),['Change schools','Drop out','Nurse','Study harder']);assert.ok(!schoolActions(6).includes('Skip school'));assert.ok(schoolActions(10).includes('Skip school'));assert.deepEqual(schoolActions(14).slice(1,4),['Nurse','School dance','Drop out']);

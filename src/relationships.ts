@@ -14,6 +14,9 @@ export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'As
 export type RelationshipAction = typeof relationshipActions[number];
 export type RelationshipRecord = { strength: number; status: 'acquaintance' | 'friend' | 'dating' | 'unfriended'; stats: Stats; friendship?: boolean; profile?: {name:string;gender:string;ageOffset:number;education:string;occupation:string}; usedAge?: number; usedActions?: RelationshipAction[]; moneyAcceptedAge?:number; successfulAge?:number; successfulActions?:RelationshipAction[] };
 export type Person = Contact & { grades?:number;popularity?:number;extracurriculars?:string[];sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
+export function relationshipRoleLabel(person:Person,contextual=false){
+ return person.status==='dating'?(person.gender==='Female'?'Girlfriend':'Boyfriend'):contextual&&person.friendship?'Friend':person.relation;
+}
 export function characters(life: Life): { personal: Person[]; work: Person[]; school: Person[] } {
   const occupation = getOccupation(life);
   const contextual = occupationContacts(life);
@@ -108,15 +111,30 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const playerHappiness=action==='Befriend'?(accepted?25:-25):action==='Ask for money'?(given?5:-10):action==='Ask out'?(accepted?25:-25):successfulIntimacy?(firstSuccessful?Math.round(romance.yourEnjoyment/5):0):['Hook up','Make love'].includes(action)?-20:action==='Break up'?-10:action==='Conversation'||action==='Flirt'?(first?response.delta:0):action==='Spend time'?(first?5:0):0;
   const recipientHappiness=action==='Befriend'?(accepted?25:0):action==='Ask for money'?(!given&&!first?-5:0):action==='Ask out'?(accepted?25:0):successfulIntimacy?(firstSuccessful?intimacyGain:0):action==='Conversation'||action==='Flirt'||action==='Compliment'?(first?response.delta:0):action==='Gift'?(first?response.delta:0):action==='Insult'?-10:action==='Spend time'?(first?5:0):action==='Break up'?-25:action==='Unfriend'?-15:action==='Act up'?-10:action==='Disrespect'?-20:action==='Suck up'?(first?Math.max(0,Math.round(response.value/10)):0):0;
   const highSocial=first&&['Compliment','Conversation','Flirt','Gift','Suck up'].includes(action)&&response.value>75;
+  const lowSocial=first&&['Compliment','Conversation','Flirt','Gift','Suck up'].includes(action)&&response.value<=25;
   const successfulSocial=action==='Befriend'&&accepted||action==='Ask out'&&accepted||firstSuccessful;
+  const rejectedSocial=action==='Befriend'&&!accepted||action==='Ask out'&&!accepted||action==='Hook up'&&!accepted;
   const antisocial=['Insult','Act up','Disrespect','Unfriend','Break up'].includes(action);
-  const charismaChange=highSocial||successfulSocial?1:antisocial?-1:0;
+  const charismaDirection=highSocial||successfulSocial?1:lowSocial||rejectedSocial||antisocial?-1:0;
+  const charismaRoll=seededRandom(`${life.id}:${id}:${life.age}:${action}:${life.log.length}:charisma`)();
+  const charismaChange=charismaDirection!==0&&charismaRoll<.5?charismaDirection:0;
   const record: RelationshipRecord = {...(!person.family?{profile:{name:person.name,gender:person.gender,ageOffset:person.age-life.age,education:person.education,occupation:person.occupation}}:{}),friendship:action==='Befriend'&&accepted?true:action==='Unfriend'?false:person.friendship,usedAge:life.age,usedActions:[...new Set([...used,action])],...(given?{moneyAcceptedAge:life.age}:previous?.moneyAcceptedAge!==undefined?{moneyAcceptedAge:previous.moneyAcceptedAge}:{}),...(successfulIntimacy?{successfulAge:life.age,successfulActions:[...new Set([...successfulUsed,action])]}:previous?.successfulAge!==undefined?{successfulAge:previous.successfulAge,successfulActions:previous.successfulActions}:{}),strength:action === 'Unfriend' ? person.strength : Math.max(0,Math.min(100,person.strength+(applyEffect?deltas[action]:0))),status,stats:{...person.stats,Happiness:Math.max(0,Math.min(100,person.stats.Happiness+recipientHappiness))}};
   const occupation=getOccupation(life);
   const school=occupation.school;
   const staff=school?.roster?.some(p=>p.id===id && ['Teacher','Principal','Professor'].includes(p.relation));
-  const rawGradeGain=action==='Act up'?-10:action==='Disrespect'?-25:action==='Suck up'?Math.max(0,response.delta):deltas[action];
-  const gradeGain=staff && applyEffect?(rawGradeGain>0?Math.min(action==='Suck up'?10:5,rawGradeGain):rawGradeGain):0;
+  const staffGradeChange:Partial<Record<RelationshipAction,number>>={
+   'Act up':-10,
+   Befriend:accepted?5:0,
+   Compliment:Math.round(response.value*2/100),
+   Conversation:-2+Math.round(response.value*4/100),
+   Gift:-5+Math.round(response.value*10/100),
+   Disrespect:-20,
+   Insult:-15,
+   'Suck up':Math.min(10,Math.max(0,response.delta)),
+   'Spend time':2,
+   Unfriend:0
+  };
+  const gradeGain=staff && applyEffect?(staffGradeChange[action]??0):0;
   const manager=groups.work.some(p=>p.id===id && p.relation==='Manager');
   const performanceGain=manager && applyEffect?(action==='Suck up'?Math.max(0,response.delta):deltas[action]):0;
   const updatedOccupation=withOccupationJobs({...occupation,...(school?{school:{...school,grades:Math.max(0,Math.min(100,school.grades+gradeGain))}}:{})},occupationJobs(occupation).map(job=>({...job,performance:Math.max(0,Math.min(100,job.performance+performanceGain))})));
