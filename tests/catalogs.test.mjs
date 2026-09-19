@@ -204,7 +204,7 @@ test('national tax brackets and retirement references remain fixed and have vali
 test('US city IDs survive saving and restarting; mismatched/unknown IDs are rejected', () => {
   const current=life(cityById('us-48-35000'));
   const store=upsertLife(emptyStore(),current); const disk=storage(); persistStore(disk,store);
-  assert.deepEqual(loadStore(disk).lives[0],current);
+  assert.deepEqual(loadStore(disk).lives[0],{...current,stats:{...current.stats,Athleticism:50}});
   assert.equal(restartLife(current).locationId,current.locationId);
   for(const change of [{city:'Seattle'},{locationId:'unknown'},{catalogSnapshotId:'unknown'}]) {
     assert.throws(()=>parseStore(JSON.stringify(upsertLife(emptyStore(),{...current,...change}))));

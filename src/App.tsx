@@ -1,7 +1,7 @@
 import {interactionConfirmation} from './interactionConfirmations';
 import ConfirmationProfile from './ConfirmationProfile';
 import {scheduleHours,scheduleLimit,busyMessage} from './schoolCommitments';
-import {takePartTimeJob,partTimeOffers,projectedJobHours,workAction,type WorkAction} from './partTimeWork';
+import {takePartTimeJob,partTimeOffers,projectedJobHours,workAction,jobEmoji,type WorkAction} from './partTimeWork';
 import SchedulePanel from './SchedulePanel';
 import {barColor} from './statBars';
 import {manageSchoolActivity} from './schoolActivities';
@@ -12,7 +12,8 @@ import { playSystemSound } from './sounds';
 import { personAddress } from './personAddress';
 import { interactionResult, type InteractionResult } from './interactionResults';
 import { giftOptions } from './gifts';
-import {applySchoolActivity} from './schoolActivities';
+import {applySchoolActivity,schoolActivities,schoolActivityName} from './schoolActivities';
+import {money} from './money';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { initialStats, type Choice, type LifeEvent, type Stats } from './data';
 import { Icon, TitleBar, type IconKind } from './ClassicUI';
@@ -56,6 +57,7 @@ export default function App() {
   const [eventSource, setEventSource] = useState<{ kind: 'year' | 'activity' }>({ kind: boot.life.pendingEvent ? 'year' : 'activity' });
   const [result,setResult]=useState<InteractionResult|null>(null);
   const [notice, setNotice] = useState(boot.error);
+  const [noticeTitle,setNoticeTitle]=useState(boot.error?'Save file problem':'Life.exe');
   const [menu, setMenu] = useState(false);
   const [allPrograms, setAllPrograms] = useState(false);
   const [explorerPage, setExplorerPage] = useState<ExplorerPage>('Assets');
@@ -119,16 +121,16 @@ export default function App() {
   }); }
   function setRect(id: WindowId, rect: Rect) { setWindows(previous => previous ? { ...previous, [id]: { ...previous[id], ...rect } } : previous); }
   function taskClick(id: WindowId) { setWindows(previous => previous ? taskbarWindow(previous, id) : previous); setMenu(false); }
-  function closeModal() { setDanceOpen(false);setDanceOutcome(null); setResult(null); setDeleteId(null); setEvent(null); setModal(null); setNotice(''); }
+  function closeModal() { setDanceOpen(false);setDanceOutcome(null); setResult(null); setDeleteId(null); setEvent(null); setModal(null); setNotice('');setNoticeTitle('Life.exe'); }
   function saveCurrent(announce = false): boolean {
     setMenu(false);
     try {
       const next = upsertLife(store, life);
       persistStore(window.localStorage, next);
       setStore(next); setDirty(false);
-      if (announce) { setModal(null); setNotice(`${life.name}'s life has been saved on this device. Age ${life.age} · Year ${life.age}.`); }
+      if (announce) { setModal(null); setNoticeTitle('Life saved'); setNotice(`${life.name}'s life has been saved on this device. Age ${life.age} · Year ${life.age}.`); }
       return true;
-    } catch { setModal(null); setNotice('Your life could not be saved. Browser storage may be unavailable or full. Your current progress is still open; please do not turn off or reload until saving works.'); return false; }
+    } catch { setModal(null); setNoticeTitle('Save failed'); setNotice('Your life could not be saved. Browser storage may be unavailable or full. Your current progress is still open; please do not turn off or reload until saving works.'); return false; }
   }
   function logOff() { setMenu(false); if (!saveCurrent()) return; closeModal(); setMode('login'); }
   function deleteCharacter() {
@@ -139,14 +141,14 @@ export default function App() {
       setStore(next);
       if (life.id === deleteTarget.id) { setLife(blankLife()); setDirty(false); }
       closeModal();
-    } catch { setModal(null); setDeleteId(null); setNotice('This life could not be deleted because browser storage is unavailable. Your saved lives have not been changed.'); }
+    } catch { setModal(null); setDeleteId(null); setNoticeTitle('Delete failed'); setNotice('This life could not be deleted because browser storage is unavailable. Your saved lives have not been changed.'); }
   }
   function switchCharacter(saved: Life) {
     try {
       const next = { ...store, activeId: saved.id };
       persistStore(window.localStorage, next);
       setMessengerProfile(null);setStore(next); setLife(structuredClone(saved)); setDirty(false); setWindows(createDesktopWindows(bounds)); setExplorerPage('Assets'); setMode('desktop'); playSystemSound('startup'); setEvent(null); setEventSource({ kind: 'year' });
-    } catch { setNotice('The character could not be opened because browser storage is unavailable. Your saved characters have not been changed.'); }
+    } catch { setNoticeTitle('Character could not be opened'); setNotice('The character could not be opened because browser storage is unavailable. Your saved characters have not been changed.'); }
   }
   function showNewLife() { setDraftSexuality('Straight'); setDraftFirstName(''); setDraftLastName(''); setDraftCity(life.locationId ?? resolveCity(life.city)?.id ?? DEFAULT_CITY_ID); setModal('new'); setMenu(false); }
   function startLife(e: FormEvent) {
@@ -170,8 +172,10 @@ export default function App() {
       setLife(previous => answerLifeEvent(previous, index)); setDirty(true); setEvent(null);
       return;
     }
+    if(choice.schoolActivityDecision){setEvent(null);finishApplyActivity(choice.schoolActivityDecision.id);return;}
+    if(choice.workAction){setEvent(null);finishWorkAction(choice.workAction);return;}
     if(choice.relationshipResponse){const next=declineInvitation(life,choice.relationshipResponse.id);setLife(next);setDirty(true);setEvent(null);return;}
-    if(choice.jobDecision){const next=takePartTimeJob(life,choice.jobDecision.id);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}setEvent(null);return;}
+    if(choice.jobDecision){setEvent(null);finishJobOffer(choice.jobDecision.id);return;}
     if(choice.membershipAction){setEvent(null);finishMembershipAction(choice.membershipAction.id,choice.membershipAction.action);return;}
     if(choice.schoolAction){setEvent(null);finishSchoolAction(choice.schoolAction);return;}
     if (choice.relationship) {
@@ -188,10 +192,10 @@ export default function App() {
     });
     setDirty(true); setEvent(null);
   }
-  function activity(_title:string,_text:string,outcome:string,effect:Partial<Stats>){const stats={...life.stats};for(const key of Object.keys(effect) as (keyof Stats)[])stats[key]=Math.max(0,Math.min(100,stats[key]+(effect[key]??0)));setLife({...life,stats,log:[...life.log,{age:life.age,tag:'ACTIVITY',text:outcome}]});setDirty(true);setNotice(outcome.replace(/^I /,'You '));}
+  function activity(title:string,_text:string,outcome:string,effect:Partial<Stats>){const stats={...life.stats};for(const key of Object.keys(effect) as (keyof Stats)[])stats[key]=Math.max(0,Math.min(100,stats[key]+(effect[key]??0)));setLife({...life,stats,log:[...life.log,{age:life.age,tag:'ACTIVITY',text:outcome}]});setDirty(true);setNoticeTitle(title);setNotice(outcome.replace(/^I /,'You '));}
   function performSchoolAction(action:SchoolAction) {
     if(action==='School dance'){setDanceOutcome(null);setDanceOpen(true);return;}
-    if(action==='Drop out' && life.age<16){setNotice('You must be at least 16 years old to drop out of school.');return;}
+    if(action==='Drop out' && life.age<16){setNoticeTitle('Too young to drop out');setNotice('You must be at least 16 years old to drop out of school.');return;}
     if(action==='Drop out' || action==='Change schools' || action==='Skip school'){
       setEventSource({kind:'activity'});setEvent({category:'School',title:action,text:action==='Drop out'?'Are you sure you want to drop out of school?':action==='Skip school'?'Are you sure you want to skip school?':`Ask your parents to send you to a different school?\nCurrent school: ${schoolName(life,getOccupation(life).school!)}\nNew school: ${nextSchoolName(life,getOccupation(life).school!)}`,choices:[{label:action==='Change schools'?'Ask my parents':action,hint:'See what happens.',outcome:'',schoolAction:action},{label:'Nevermind',hint:'Return to school.',outcome:''}]});return;
     }
@@ -199,32 +203,38 @@ export default function App() {
   }
   function finishSchoolAction(action:SchoolAction) {
     const next=schoolAction(life,action);if(next!==life){setLife(next);setDirty(true);}
-    if(action==='Study harder'){const messages=['You studied until the library closed.','You reviewed your notes until late in the evening.','You spent the afternoon working through difficult questions.','You studied until your pencil needed sharpening again.','You made flashcards and reviewed them after dinner.'];setNotice(messages[Math.floor(Math.random()*messages.length)]);}
-    else setNotice(next!==life?next.log.at(-1)?.text.replace(/^I /,'You ').replace(/My /g,'Your ')??'':'You already did this school action this year.');
+    if(action==='Study harder'){setNoticeTitle('Studying harder');const messages=['You studied until the library closed.','You reviewed your notes until late in the evening.','You spent the afternoon working through difficult questions.','You studied until your pencil needed sharpening again.','You made flashcards and reviewed them after dinner.'];setNotice(messages[Math.floor(Math.random()*messages.length)]);}
+    else {setNoticeTitle(action==='Nurse'?'A visit to the school nurse':action);setNotice(next!==life?next.log.at(-1)?.text.replace(/^I /,'You ').replace(/My /g,'Your ')??'':'You already did this school action this year.');}
   }
   function membershipAction(id:string,action:MembershipAction,hours?:number) {
     if(action==='Hours'){const next=manageSchoolActivity(life,id,action,hours);if(next!==life){setLife(next);setDirty(true);}return;}
+    if(action==='Quit'){const activity=schoolActivities.find(item=>item.id===id);if(!activity)return;setEventSource({kind:'activity'});setEvent({category:'Extracurricular',title:`Leave ${activity.emoji} ${schoolActivityName(activity,life.family?.gender)}?`,text:`Are you sure you want to quit this ${activity.group==='Sports'?'team':'club'}?`,choices:[{label:activity.group==='Sports'?'Quit the team':'Quit the club',hint:'Leave this extracurricular.',outcome:'',membershipAction:{id,action}},{label:'Nevermind',hint:'Remain a member.',outcome:''}]});return;}
     finishMembershipAction(id,action);
   }
-  function finishMembershipAction(id:string,action:MembershipAction) {const next=manageSchoolActivity(life,id,action);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text.replace(/^I /,'You ')??'');}else setNotice('You put in more effort, but you already received the performance benefit this year.');}
+  function finishMembershipAction(id:string,action:MembershipAction) {const next=manageSchoolActivity(life,id,action);setNoticeTitle(action==='Quit'?'Extracurricular membership':'Extra effort');if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text.replace(/^I /,'You ')??'');}else setNotice('You put in more effort, but you already received the performance benefit this year.');}
   function resolveDance(mode:DanceMode,id?:string) {const outcome=schoolDance(life,mode,id);if(outcome.life!==life){setLife(outcome.life);setDirty(true);}setDanceOutcome(outcome);}
   function finishInteraction(id:string,action:RelationshipAction,giftId?:string,invited=false){const groups=characters(life),person=[...groups.personal,...groups.work,...groups.school].find(p=>p.id===id);if(!person)return;const next=interact(life,id,action,giftId,invited);if(next!==life){setLife(next);setDirty(true);setResult(interactionResult(life,next,person,action,giftId,invited));}}
   function relationshipAction(id:string,action:RelationshipAction){
     const groups=characters(life),person=[...groups.personal,...groups.work,...groups.school].find(p=>p.id===id);if(!person||actionUnavailable(life,person,action))return;
     const target=personAddress(person);setEventSource({kind:'activity'});
-    if(action==='Gift'){setEvent({category:'Gift',title:`Gift · ${target}`,text:'Choose a gift.',choices:[...giftOptions().map(gift=>({label:`${gift.name} ($${gift.price})`,hint:life.balance<gift.price?'You cannot afford this gift.':'Give this gift.',disabled:life.balance<gift.price,outcome:'',relationship:{id,action,giftId:gift.id}})),{label:'Nevermind',hint:'Return to their profile.',outcome:''}]});return;}
+    if(action==='Gift'){setEvent({category:'Gift',title:`Choose a gift for ${target}`,text:'Choose a gift.',choices:[...giftOptions().map(gift=>({label:`${gift.name} ($${gift.price})`,hint:life.balance<gift.price?'You cannot afford this gift.':'Give this gift.',disabled:life.balance<gift.price,outcome:'',relationship:{id,action,giftId:gift.id}})),{label:'Nevermind',hint:'Return to their profile.',outcome:''}]});return;}
     const confirmation=interactionConfirmation(life,person,action);if(confirmation)setEvent(confirmation);else finishInteraction(id,action);
   }
-  function applyActivity(id:string){if(scheduleHours(life)+5>scheduleLimit){setNotice(busyMessage);return;}const next=applySchoolActivity(life,id);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}
-  function performWorkAction(action:WorkAction){const result=workAction(life,action);if(result.life!==life){setLife(result.life);setDirty(true);}setNotice(result.text);}
+  function applyActivity(id:string){const activity=schoolActivities.find(item=>item.id===id);if(!activity)return;if(scheduleHours(life)+5>scheduleLimit){setNoticeTitle('Schedule full');setNotice(busyMessage);return;}const name=schoolActivityName(activity,life.family?.gender);setEventSource({kind:'activity'});setEvent({category:activity.group==='Sports'?'Sports tryout':'Club application',title:`${activity.emoji} ${name}`,text:activity.group==='Sports'?'Your Health and Athleticism determine your chance of making this team.':'Apply to join this club?',...(activity.group==='Sports'?{meters:[{name:'Health',value:life.stats.Health},{name:'Athleticism',value:life.stats.Athleticism??50}]}:{}),choices:[{label:activity.group==='Sports'?'Try out':'Apply',hint:activity.group==='Sports'?'Attend the team tryout.':'Submit your application.',outcome:'',schoolActivityDecision:{id}},{label:'Nevermind',hint:'Return to the list.',outcome:''}]});}
+  function finishApplyActivity(id:string){const next=applySchoolActivity(life,id);if(next!==life){setLife(next);setDirty(true);const activity=schoolActivities.find(item=>item.id===id);setNoticeTitle(activity?`${activity.group==='Sports'?'Tryout':'Application'} · ${schoolActivityName(activity,life.family?.gender)}`:'Application result');setNotice(next.log.at(-1)?.text??'');}}
+  function performWorkAction(action:WorkAction){if(action==='Resign'){const job=getOccupation(life).job;if(!job)return;setEventSource({kind:'activity'});setEvent({category:'Employment',title:`Resign from ${job.position}?`,text:`Are you sure you want to leave ${job.employer}?`,choices:[{label:'Tender my resignation',hint:'Leave this job.',outcome:'',workAction:action},{label:'Nevermind',hint:'Keep working here.',outcome:''}]});return;}finishWorkAction(action);}
+  function finishWorkAction(action:WorkAction){const result=workAction(life,action);if(result.life!==life){setLife(result.life);setDirty(true);}setNoticeTitle(action==='Work harder'?'Working harder':action==='Raise'?'Raise request':'Hours request');setNotice(result.text);}
   function openProfile(id:string){setProfileVersion(v=>v+1);setMessengerProfile(id);openWindow('Messenger');}
   function finishResult(){const followUp=result?.followUp;setResult(null);if(followUp){setEventSource({kind:'activity'});setEvent(followUp);}else closeModal();}
-  function showJobOffer(id:string){const offer=partTimeOffers(life).find(j=>j.id===id);if(!offer)return;if(projectedJobHours(life,offer.weeklyHours)>scheduleLimit){setNotice(busyMessage);return;}const next=takePartTimeJob(life,id);if(next!==life){setLife(next);setDirty(true);setNotice(next.log.at(-1)?.text??'');}}
+  function showJobOffer(id:string){const offer=partTimeOffers(life).find(j=>j.id===id);if(!offer)return;if(projectedJobHours(life,offer.weeklyHours)>scheduleLimit){setNoticeTitle('Schedule full');setNotice(busyMessage);return;}setEventSource({kind:'activity'});setEvent({category:'Job application',title:`${jobEmoji(offer.id)} ${offer.title}`,text:`Employer: ${offer.title==='Babysitter'||offer.title==='Pet sitter'?'Neighborhood families':'Local '+offer.title.replace(/ worker| assistant| aide| attendant/i,'')}
+Hourly wage: ${money(offer.hourlyWage)} USD
+Weekly hours: ${offer.weeklyHours} hours`,choices:[{label:'Apply',hint:'Apply for this position.',outcome:'',jobDecision:{id}},{label:'Nevermind',hint:'Return to job listings.',outcome:''}]});}
+  function finishJobOffer(id:string){const next=takePartTimeJob(life,id);if(next!==life){setLife(next);setDirty(true);setNoticeTitle(`Applied for ${next.occupation?.job?.position??'job'}`);setNotice(next.log.at(-1)?.text??'');}}
   function turnOff() { playSystemSound('shutdown'); setMode('off'); closeModal(); setMenu(false); }
   function restart() { setLife(previous => restartLife(previous)); setDirty(true); closeModal(); openWindow('Command'); }
   function powerOn() { const saved = store.lives.find(saved => saved.id === store.activeId); setLife(structuredClone(saved ?? blankLife())); setDirty(!saved); setWindows(createDesktopWindows(bounds)); setMode('login'); }
-  function about() { setMenu(false); setNotice('Life.exe — Luna edition. Enternet Explorer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
-  const dialogTitle = notice ? 'Life.exe' : danceOpen ? 'School dance' : result ? 'Interaction outcome' : modal === 'schedule' ? 'Schedule' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : `${event?.category ?? 'Life event'} — Age ${life.age}`;
+  function about() { setMenu(false); setNoticeTitle('About Life.exe'); setNotice('Life.exe — Luna edition. Enternet Explorer is for activities, jobs, and education. My Life is your character overview and statistics monitor. File Explorer holds your assets and finances. Messenger is for relationships. Yearly life events appear in pop-ups. Command Prompt records your story. Saves are stored locally in this browser. The date advances once per life year; the world rules remain fixed.'); }
+  const dialogTitle = notice ? noticeTitle : danceOpen ? 'School dance' : result ? result.title : modal === 'schedule' ? 'Schedule' : modal === 'delete' ? 'Delete saved life' : modal === 'new' ? 'Create a character' : modal === 'power' ? 'Turn off computer' : modal === 'restart' ? 'Restart current life' : modal === 'quit' ? 'Turn off computer' : event?.title ?? 'Life event';
 
   return <div className={`classic-desktop managed-desktop luna-desktop ${mode !== 'desktop' ? 'session-screen' : ''}`}>
     {mode === 'desktop' ? <>
@@ -281,7 +291,7 @@ export default function App() {
         <div className="modal-content"><h2>Restart {life.name}'s life?</h2><p>Return to age 0 with the same name and birthplace. Current stats and life history will reset.</p><p className="modal-note">The saved version stays unchanged until you save again.</p></div><div className="dialog-actions"><button className="classic-button" onClick={restart}>Restart life</button><button className="classic-button" onClick={closeModal}>Nevermind</button></div>
       </> : modal === 'new' ? <form onSubmit={startLife}>
         <div className="modal-content"><div className="dialog-intro"><Icon kind="new"/><div><h2>A new life begins</h2><p>Every story starts at age 0.</p></div></div><label htmlFor="character-first-name">First name:</label><input id="character-first-name" value={draftFirstName} onChange={e => setDraftFirstName(e.target.value)} maxLength={48} autoComplete="given-name" required/><label htmlFor="character-last-name">Last name:</label><input id="character-last-name" value={draftLastName} onChange={e => setDraftLastName(e.target.value)} maxLength={48} autoComplete="family-name" required/><label htmlFor="character-city">Starting city:</label><select id="character-city" value={draftCity} onChange={e => setDraftCity(e.target.value)}>{cityOptions.map(city => <option key={city.id} value={city.id}>{city.name}</option>)}</select><label htmlFor="character-sexuality">Sexuality:</label><select id="character-sexuality" value={draftSexuality} onChange={e=>setDraftSexuality(e.target.value as Sexuality)}>{(['Straight','Bisexual','Gay'] as const).map(value=><option key={value}>{value}</option>)}</select><p className="modal-note">{mode === 'desktop' ? "Your current character is saved before a new life starts." : "Create your character to begin."}</p></div><div className="dialog-actions"><button className="classic-button" type="submit">Start Life</button><button className="classic-button" type="button" onClick={closeModal}>Nevermind</button></div>
-      </form> : event && <div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">{eventSource.kind === 'year' ? `Beginning of age ${life.age} · ${event.category}` : event.category}</span><h2>{event.title}</h2></div></div><p className="event-description" style={{whiteSpace:'pre-line'}}>{event.text}</p>{event.profileId && <ConfirmationProfile life={life} id={event.profileId}/>}<fieldset className="event-choices"><legend>What will you do?</legend>{event.choices.map((choice, index) => <button className="classic-button choice-button" key={choice.label} disabled={choice.disabled} onClick={() => choose(choice, index)}><strong>{choice.label}</strong><small>{choice.hint}</small></button>)}</fieldset></div>}
+      </form> : event && <div className="modal-content"><div className="dialog-intro"><Icon kind="people"/><div><span className="event-eyebrow">{eventSource.kind === 'year' ? `Beginning of age ${life.age} · ${event.category}` : event.category}</span><h2>{event.title}</h2></div></div><p className="event-description" style={{whiteSpace:'pre-line'}}>{event.text}</p>{event.meters?.map(meter=><div className="result-reaction" key={meter.name}><strong>{meter.name}</strong><div className="result-reaction-track" role="progressbar" aria-label={meter.name} aria-valuenow={meter.value} aria-valuemin={0} aria-valuemax={100}><div style={{width:`${meter.value}%`,background:barColor(meter.value)}}/></div></div>)}{event.profileId && <ConfirmationProfile life={life} id={event.profileId}/>}<fieldset className="event-choices"><legend>What will you do?</legend>{event.choices.map((choice, index) => <button className="classic-button choice-button" key={choice.label} disabled={choice.disabled} onClick={() => choose(choice, index)}><strong>{choice.label}</strong><small>{choice.hint}</small></button>)}</fieldset></div>}
     </dialog>
   </div>;
 }

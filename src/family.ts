@@ -28,7 +28,7 @@ export function seededRandom(seed: string): () => number {
 export function generateFamily(id: string, surname: string): Family {
  const random=seededRandom(id+':family');
  const integer=(a:number,b:number)=>a+Math.floor(random()*(b-a+1));
- const stats=():Stats=>({Health:integer(65,100),Happiness:integer(55,95),Smarts:integer(30,95),Looks:integer(30,95)});
+ const stats=():Stats=>({Health:integer(65,100),Happiness:integer(55,95),Smarts:integer(30,95),Looks:integer(30,95),Athleticism:integer(25,95)});
  const single=random()<.18;
  const motherCareer=integer(0,jobs.length-1);
  const fatherCareer=single?undefined:integer(0,jobs.length-1);
@@ -41,14 +41,14 @@ export function generateFamily(id: string, surname: string): Family {
   return {id:mother?'parent-mother':'parent-father',name:`${givenNamesForGender(mother?'Female':'Male')[integer(0,givenNamesForGender(mother?'Female':'Male').length-1)]} ${mother && !single && random()>.85?namePool.surnames[integer(0,namePool.surnames.length-1)]:surname}`,relation:mother?'Mother':'Father',gender:mother?'Female':'Male',ageAtBirth,education:career===2?"Bachelor's (Nursing)":career===3?"Bachelor's (Education)":career===4?"Bachelor's (Computer Science)":'High school diploma',occupation:job.titles[rank],career,rank,yearsInPosition:integer(0,4),stats:stats()};
  };
  const parents=[makeParent(true),...(!single?[makeParent(false)]:[])];
- const inherit=(key:'Smarts'|'Looks')=>clamp(Math.round(parents.reduce((sum,p)=>sum+p.stats[key],0)/parents.length)+integer(-8,8));
+ const inherit=(key:'Smarts'|'Looks'|'Athleticism')=>clamp(Math.round(parents.reduce((sum,p)=>sum+p.stats[key],0)/parents.length)+integer(-8,8));
  const siblings:Sibling[]=[];
  const olderAges=olderSiblingAges(random,parents[0].ageAtBirth,parents[1]?.ageAtBirth);
  const usedNames=new Set(parents.map(parent=>parent.name));
  for(let i=0;i<olderAges.length;i++){const gender=random()<.5?'Female':'Male';siblings.push({id:`sibling-older-${i}`,name:siblingName(gender,surname,random,usedNames),gender,birthAge:-olderAges[i],stats:stats()});}
  const income=parents.reduce((sum,p)=>sum+jobs[p.career!].salary*(1+p.rank!*.4),0);
  const money=clamp(Math.round(10+income/5000+parents.reduce((sum,p)=>sum+p.ageAtBirth-18,0)/3+integer(-8,12)+(random()<.12?25:0)));
- return {parents,siblings,money,gender:random()<.5?'Female':'Male',planned:random()<.65,birthStats:{Health:integer(85,100),Happiness:integer(70,95),Smarts:inherit('Smarts'),Looks:inherit('Looks')},origin:structuredClone({parents,money,siblings})};
+ return {parents,siblings,money,gender:random()<.5?'Female':'Male',planned:random()<.65,birthStats:{Health:integer(85,100),Happiness:integer(70,95),Smarts:inherit('Smarts'),Looks:inherit('Looks'),Athleticism:inherit('Athleticism')},origin:structuredClone({parents,money,siblings})};
 }
 export function resetFamily(family: Family): Family {
  return family.origin?{...family,...structuredClone(family.origin)}:family;
@@ -75,7 +75,7 @@ export function advanceFamily(family: Family | undefined,id:string,age:number,su
  let newborn:Sibling|undefined;
  if(mother && random()<siblingBirthChance(mother.ageAtBirth+age,siblings.length+1)) {
   const gender=random()<.5?'Female':'Male';
-  newborn={id:`sibling-born-${age}`,name:siblingName(gender,surname,random,new Set([...parents,...siblings].map(person=>person.name))),gender,birthAge:age,stats:{Health:90,Happiness:80,Smarts:family.birthStats.Smarts,Looks:family.birthStats.Looks}};
+  newborn={id:`sibling-born-${age}`,name:siblingName(gender,surname,random,new Set([...parents,...siblings].map(person=>person.name))),gender,birthAge:age,stats:{Health:90,Happiness:80,Smarts:family.birthStats.Smarts,Looks:family.birthStats.Looks,Athleticism:family.birthStats.Athleticism}};
   siblings.push(newborn);
  }
  const growth=.2+parents.reduce((sum,p)=>sum+(p.rank??0)*.15,0)+promotions.length*.8;

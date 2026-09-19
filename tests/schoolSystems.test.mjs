@@ -22,7 +22,7 @@ test('expanded pools are unique and gender pools retain neutral names',()=>{
 test('school classes are appropriately sized, have principals and multiple teachers, and save stable identities',()=>{
  for(const age of [6,12,15]){const current=life(age),occupation=getOccupation(current);assert.equal(peers(current).length+1,classroomSize(age));assert.equal(staff(current).filter(p=>p.relation==='Principal').length,1);assert.ok(staff(current).filter(p=>p.relation==='Teacher').length>=3);
  const schoolPeople=characters(current).school;assert.equal(new Set(schoolPeople.map(p=>p.id)).size,schoolPeople.length);assert.equal(new Set(schoolPeople.map(p=>p.name)).size,schoolPeople.length);
- for(const person of schoolPeople){assert.ok(person.age>=age);assert.equal(Object.keys(person.stats).length,4);}
+ for(const person of schoolPeople){assert.ok(person.age>=age);assert.equal(Object.keys(person.stats).length,5);}
  const loaded=saved({...current,occupation});assert.deepEqual(characters(loaded).school,schoolPeople);}
 });
 test('rosters mostly persist yearly, change more at stage transitions, and replace all stage staff',()=>{

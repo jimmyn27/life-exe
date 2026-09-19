@@ -41,7 +41,7 @@ test('storage write failures propagate and leave the previous save intact', () =
   persistStore(disk, original);
   const full = { getItem: disk.getItem, setItem: () => { throw new Error('Storage full'); } };
   assert.throws(() => persistStore(full, upsertLife(original, { ...life(), age: 20 })), /Storage full/);
-  assert.deepEqual(loadStore(disk), original);
+  assert.deepEqual(loadStore(disk),{...original,lives:original.lives.map(saved=>({...saved,stats:{...saved.stats,Athleticism:50}}))});
 });
 
 test('unreadable previous saves are backed up before replacement', () => {

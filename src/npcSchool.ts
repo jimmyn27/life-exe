@@ -2,7 +2,7 @@ import {seededRandom} from './family.ts';
 import {schoolActivities} from './schoolActivityCatalog.ts';
 import type {SchoolPerson} from './schoolCommunity';
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
-export function npcBaseStats(id:string){const seed=[...id].reduce((sum,c)=>sum+c.charCodeAt(0),0);return {Health:75+seed%21,Happiness:65+seed%30,Smarts:60+seed%36,Looks:55+seed%40};}
+export function npcBaseStats(id:string){const seed=[...id].reduce((sum,c)=>sum+c.charCodeAt(0),0);return {Health:75+seed%21,Happiness:65+seed%30,Smarts:60+seed%36,Looks:55+seed%40,Athleticism:45+seed%51};}
 export function advanceClassmate(person:SchoolPerson,lifeId:string,age:number,transition=false):SchoolPerson {
  if(person.relation!=='Classmate')return person;
  const stats=npcBaseStats(person.id),random=seededRandom(`${lifeId}:${person.id}:school:${age}`);

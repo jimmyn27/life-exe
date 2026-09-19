@@ -60,3 +60,8 @@ test('friend dance invitations use average friend strength; solo enjoyment can h
  const current=life(14,`solo-${i}`),dance=schoolDance(current,'alone');assert.equal(dance.bars.length,1);assert.equal(dance.bars[0].label,'Your Enjoyment');if(dance.life.stats.Happiness>60)soloGood++;saved(dance.life);}
  assert.equal(high,30);assert.equal(low,0);assert.ok(soloGood>0);
 });
+
+test('Health and Athleticism drive sports tryouts and shared activities build classmate relationships',()=>{
+ let high=0,low=0,shared=false;for(let i=0;i<120;i++){for(const strong of [false,true]){const current={...life(14,`athlete-${i}`),stats:{...life().stats,Health:strong?100:0,Athleticism:strong?100:0}};const next=applySchoolActivity(current,'basketball');if(next.occupation.school.activityAttempts.basketball.accepted){strong?high++:low++;const peer=next.occupation.school.roster.find(p=>p.relation==='Classmate'&&p.sports?.includes('basketball'));if(peer){assert.equal(next.relationships[peer.id].strength,Math.min(100,peer.strength+20));shared=true;}}}}
+ assert.ok(high>low+50);assert.ok(shared);
+});
