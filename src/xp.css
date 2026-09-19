@@ -225,14 +225,16 @@
 .dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:13px 16px;border-top:1px solid #d9d5c5;background:#e5e1d0}
 .dialog-actions button{font-size:11px}
 .information-content{display:flex;gap:16px;align-items:flex-start}
-.info-symbol{border-radius:50%;background:linear-gradient(#7bb9f4,#2264b7);border:1px solid #09407a;color:white;font:bold 26px Georgia;display:grid;place-items:center;width:35px;height:35px;flex-shrink:0;box-shadow:1px 2px 3px #0002}
+.popup-message{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px}
+.popup-message .event-description{margin:3px 0 0;flex:1}
+.popup-emoji{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;font-size:30px;line-height:1;filter:drop-shadow(1px 2px 1px #0002)}
+.information-content .popup-emoji{margin-top:-2px}
 .dialog-intro{display:flex;align-items:center;gap:15px;margin-bottom:17px}
 .dialog-intro>.xp-icon{width:40px;height:40px}
 .dialog-intro h2{margin:4px 0}
 .modal-content label{display:block;font-size:11px;margin:15px 0 6px}
 .modal-content input,.modal-content select{width:100%}
 .modal-content .modal-note{font-size:10px;color:#78807d;margin-top:15px}
-.event-eyebrow{color:#78887e;font-size:10px}
 .event-description{margin:10px 0 18px}
 .event-choices{border:1px solid #c1c5bc;padding:13px;margin:0}
 .event-choices legend{font-size:11px;color:#58728d}

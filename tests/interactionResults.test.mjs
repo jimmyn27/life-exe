@@ -11,7 +11,7 @@ test('only compliments, conversations and gifts have reaction meters; all valid 
   for(const action of availableActions(person,before).filter(action=>!actionUnavailable(before,person,action))){
    const after=interact(before,person.id,action,action==='Gift'?'flowers':undefined);assert.notEqual(after,before);
    const result=interactionResult(before,after,person,action,action==='Gift'?'flowers':undefined);
-   assert.equal(Boolean(result.meter),['Compliment','Conversation','Gift','Suck up','Flirt'].includes(action));assert.match(result.text,/^You/);assert.ok(result.text.includes(personAddress(person)) || action==='Ask for money');
+   assert.equal(Boolean(result.meter),['Compliment','Conversation','Gift','Suck up','Flirt'].includes(action));assert.ok(result.title && result.icon);assert.match(result.text,/^You/);assert.ok(result.text.includes(personAddress(person)) || action==='Ask for money');
    if(action==='Conversation')assert.match(result.meter.label,/agreement/);if(action==='Gift' || action==='Compliment')assert.match(result.meter.label,/appreciation/);
   }
  }
@@ -31,7 +31,7 @@ test('gift result reflects its actual effect; repeat outcomes clearly report no 
  const before=life('gift-results'),person=characters(before).personal[0];
  const after=interact(before,person.id,'Gift','soap'),result=interactionResult(before,after,person,'Gift','soap');assert.ok(result.change<0);assert.ok(result.meter.value<=15);assert.match(result.text,/deodorant/);
  const currentPerson=characters(after).personal.find(p=>p.id===person.id),repeat=interact(after,person.id,'Gift','flowers');
- const repeated=interactionResult(after,repeat,currentPerson,'Gift','flowers');assert.equal(repeated.change,0);assert.ok(repeated.meter.value>=0 && repeated.meter.value<=100);assert.match(repeated.note,/this year/);
+ const repeated=interactionResult(after,repeat,currentPerson,'Gift','flowers');assert.equal(repeated.change,0);assert.ok(repeated.meter.value>=0 && repeated.meter.value<=100);assert.equal(repeated.note,'You already received the effect of this interaction this year.');
 });
 
 test('family and teacher actions use familiar forms of address while preserving full profile names',()=>{

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SAVE_KEY, clearPrototypeSaves, emptyStore, parseStore, persistStore, loadStore, upsertLife, restartLife, lifeDate } from '../src/saves.ts';
 import { eventForAge } from '../src/lifeEvents.ts';
+import {childhoodEventPools} from '../src/childhoodEvents.ts';
 
 const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
 function storage() { const values = new Map(); return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }; }
@@ -71,7 +72,7 @@ test('life dates follow age and every year after restart has a valid event', () 
     assert.ok(event.title && event.choices.length);
     assert.ok(event.choices.every(choice => choice.label && choice.outcome));
   }
-  assert.equal(eventForAge(1).title, 'My first words');
+  assert.ok(childhoodEventPools[1].some(event=>event.title===eventForAge(1).title));
   assert.equal(eventForAge(8).title, 'Choosing a hobby');
   assert.equal(eventForAge(14).title, 'Starting high school');
 });
