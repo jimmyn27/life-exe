@@ -14,7 +14,7 @@ test('families share the child surname, usually both, with bounded inherited bir
     assert.deepEqual(generateFamily(String(seed),'River Smith'),family);
     assert.ok(family.parents.some(parent=>parent.name.endsWith(' River Smith')));
     if(family.parents.every(parent=>parent.name.endsWith(' River Smith'))) both++;
-    for(const key of ['Smarts','Looks']) assert.ok(Math.abs(family.birthStats[key]-family.parents.reduce((sum,p)=>sum+p.stats[key],0)/family.parents.length)<=8.5);
+    for(const key of ['Intelligence','Appearance']) assert.ok(Math.abs(family.birthStats[key]-family.parents.reduce((sum,p)=>sum+p.stats[key],0)/family.parents.length)<=8.5);
   }
   assert.ok(both>150 && both<200);
 });
@@ -26,8 +26,8 @@ test('family identity, parent ages, stats and inherited restart stats survive sa
   assert.equal(parents[0].age,life.family.parents[0].ageAtBirth+12);
   assert.equal(parents[0].gender,'Female');assert.equal(parents[1].gender,'Male');
   assert.deepEqual(parents[0].stats,life.family.parents[0].stats);
-  assert.deepEqual(restartLife({...loaded,age:18,stats:{...loaded.stats,Smarts:100}}).stats,life.family.birthStats);
-  const corrupt=structuredClone(loaded);corrupt.family.parents[0].stats.Looks=101;
+  assert.deepEqual(restartLife({...loaded,age:18,stats:{...loaded.stats,Intelligence:100}}).stats,life.family.birthStats);
+  const corrupt=structuredClone(loaded);corrupt.family.parents[0].stats.Appearance=101;
   assert.throws(()=>parseStore(JSON.stringify(upsertLife(emptyStore(),corrupt))));
 });
 test('a full childhood leads through elementary, middle, high school and a saved diploma',()=>{
@@ -47,7 +47,7 @@ test('a full childhood leads through elementary, middle, high school and a saved
     if(age>=6 && age<18) {
       const studied=schoolAction(life,'Study hard');
       assert.ok(studied.occupation.school.grades>=life.occupation.school.grades);
-      assert.equal(schoolAction(studied,'Study hard').stats.Smarts,studied.stats.Smarts);
+      assert.equal(schoolAction(studied,'Study hard').stats.Intelligence,studied.stats.Intelligence);
       life=schoolAction(studied,'Join an activity');
       assert.equal(schoolAction(life,'Join an activity'),life);
     }
@@ -66,7 +66,7 @@ test('early childhood has varied deterministic events with broad effects and up 
   assert.ok(new Set(Array.from({length:40},(_,seed)=>childhoodEvent(age,`life-${seed}`).title)).size>1);
  }
  const effects=Object.values(childhoodEventPools).flat().flatMap(event=>event.choices);
- for(const stat of ['Health','Happiness','Smarts','Looks','Athleticism'])assert.ok(effects.some(choice=>choice.effect?.[stat]));
+ for(const stat of ['Health','Happiness','Intelligence','Appearance'])assert.ok(effects.some(choice=>choice.effect?.[stat]));
  assert.ok(effects.some(choice=>choice.familyEffect?.parents));
  assert.ok(effects.some(choice=>choice.familyEffect?.siblings));
 });

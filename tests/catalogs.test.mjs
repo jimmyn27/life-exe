@@ -28,7 +28,7 @@ test('community college awards open appropriate ranks without bypassing advanced
   assert.equal(meetsPositionEducation('office-1',[{credentialId:'ged'}]),true);
   assert.throws(()=>meetsPositionEducation('unknown',[]));
 });
-const life = city => ({ id:'us-test',name:'Jamie Morgan',firstName:'Jamie',lastName:'Morgan',city:city.name,locationId:city.id,catalogSnapshotId:US_SNAPSHOT.id,age:18,birthYear:2000,balance:500,stats:{Health:90,Happiness:80,Smarts:70,Looks:60},log:[] });
+const life = city => ({ id:'us-test',name:'Jamie Morgan',firstName:'Jamie',lastName:'Morgan',city:city.name,locationId:city.id,catalogSnapshotId:US_SNAPSHOT.id,age:18,birthYear:2000,balance:500,stats:{Health:90,Happiness:80,Intelligence:70,Appearance:60},log:[] });
 const storage = () => { const entries=new Map(); return { getItem:key=>entries.get(key)??null,setItem:(key,value)=>entries.set(key,value) }; };
 
 test('50 largest Census places have unique city labels, stable GEOIDs and valid hidden states', () => {
@@ -204,7 +204,7 @@ test('national tax brackets and retirement references remain fixed and have vali
 test('US city IDs survive saving and restarting; mismatched/unknown IDs are rejected', () => {
   const current=life(cityById('us-48-35000'));
   const store=upsertLife(emptyStore(),current); const disk=storage(); persistStore(disk,store);
-  assert.deepEqual(loadStore(disk).lives[0],{...current,stats:{...current.stats,Athleticism:50}});
+  assert.deepEqual(loadStore(disk).lives[0],current);
   assert.equal(restartLife(current).locationId,current.locationId);
   for(const change of [{city:'Seattle'},{locationId:'unknown'},{catalogSnapshotId:'unknown'}]) {
     assert.throws(()=>parseStore(JSON.stringify(upsertLife(emptyStore(),{...current,...change}))));

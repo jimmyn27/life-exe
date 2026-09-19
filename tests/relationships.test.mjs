@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { characters, availableActions, interact, relationshipActions } from '../src/relationships.ts';
 import { parseStore, upsertLife, emptyStore, restartLife } from '../src/saves.ts';
-const life = age => ({id:'social-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Smarts:76,Looks:68},log:[]});
+const life = age => ({id:'social-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Intelligence:76,Appearance:68},log:[]});
 test('profiles have player stats, age with the player, and correct parent action restrictions', () => {
   const groups = characters(life(18)); const parent = groups.personal[0]; const maya = groups.personal.find(person => person.id === 'maya-chen');
-  assert.deepEqual(Object.keys(parent.stats),['Health','Happiness','Smarts','Looks','Athleticism']); assert.equal(parent.age,46);
+  assert.deepEqual(Object.keys(parent.stats),['Health','Happiness','Intelligence','Appearance']); assert.equal(parent.age,46);
   assert.equal(characters(life(19)).personal[0].age,47);
   assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
   assert.deepEqual(availableActions(maya),relationshipActions.filter(action=>!['Ask for money','Befriend','Act up','Disrespect','Suck up','Make love','Break up'].includes(action)));
@@ -18,7 +18,7 @@ test('interactions change relationships, gifting charges money once per action, 
   const gift = interact(insult,'maya-chen','Gift'); assert.equal(gift.balance,75); assert.equal(gift.log.length,3);
   const broke = {...current,balance:24}; assert.equal(interact(broke,'maya-chen','Gift'),broke);
 });
-test('dating starts at ten while intimacy requires adults and acceptance, and unfriending removes friends and ends dating', () => {
+test('dating starts at twelve while intimacy requires adults and acceptance, and unfriending removes friends and ends dating', () => {
   const teenager = life(17); assert.equal(interact(teenager,'maya-chen','Ask out').relationships['maya-chen'].status,'dating'); assert.equal(interact(teenager,'maya-chen','Make love'),teenager);
   const dated = interact(life(18),'maya-chen','Ask out'); assert.equal(dated.relationships['maya-chen'].status,'dating');
   const declined = interact({...dated,relationships:{'maya-chen':{...dated.relationships['maya-chen'],status:'friend',strength:20}}},'maya-chen','Ask out');

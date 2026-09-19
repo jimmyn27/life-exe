@@ -10,7 +10,7 @@ export function applySchoolActivity(life:Life,id:string):Life{
  if(life.pendingEvent || !school || life.age<10 || life.age>=18 || !activity || school.memberships?.includes(id) || (school.activityAttempts?.[id]?.age===life.age && (school.activityAttempts[id].count??1)>=2))return life;
  if(scheduleHours(life)+5>scheduleLimit)return life;
  const prior=school.activityAttempts?.[id],count=prior?.age===life.age?(prior.count??1)+1:1;
- const chance=activity.group==='Clubs'?.7:Math.min(.95,.1+life.stats.Health*.004+(life.stats.Athleticism??50)*.005);
+ const chance=Math.min(.95,.1+(activity.group==='Clubs'?life.stats.Intelligence:life.stats.Health)*.0085);
  const accepted=count===1 && seededRandom(`${life.id}:activity:${school.startAge}:${life.age}:${id}`)()<chance;
  const relationships={...life.relationships};
  if(accepted)for(const peer of school.roster?.filter(person=>person.relation==='Classmate' && (activity.group==='Sports'?person.sports:person.clubs)?.includes(id))??[]){const old=relationships[peer.id];relationships[peer.id]={...old,strength:Math.min(100,(old?.strength??peer.strength)+20),status:old?.status??'acquaintance',...(old?.friendship!==undefined?{friendship:old.friendship}:{}),stats:old?.stats??npcBaseStats(peer.id)};}

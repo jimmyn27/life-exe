@@ -4,7 +4,7 @@ import { SAVE_KEY, clearPrototypeSaves, emptyStore, parseStore, persistStore, lo
 import { eventForAge } from '../src/lifeEvents.ts';
 import {childhoodEventPools} from '../src/childhoodEvents.ts';
 
-const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Smarts: 76, Looks: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
+const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Intelligence: 76, Appearance: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
 function storage() { const values = new Map(); return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }; }
 
 test('saving and reloading multiple characters preserves each life and active character', () => {
@@ -42,7 +42,7 @@ test('storage write failures propagate and leave the previous save intact', () =
   persistStore(disk, original);
   const full = { getItem: disk.getItem, setItem: () => { throw new Error('Storage full'); } };
   assert.throws(() => persistStore(full, upsertLife(original, { ...life(), age: 20 })), /Storage full/);
-  assert.deepEqual(loadStore(disk),{...original,lives:original.lives.map(saved=>({...saved,stats:{...saved.stats,Athleticism:50}}))});
+  assert.deepEqual(loadStore(disk),original);
 });
 
 test('unreadable previous saves are backed up before replacement', () => {

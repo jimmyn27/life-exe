@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {characters,interact,availableActions,actionUnavailable} from '../src/relationships.ts';
 import {interactionResult} from '../src/interactionResults.ts';
-const life=id=>({id,name:'Sam Smith',city:'New York City',age:18,birthYear:2000,balance:1000,stats:{Health:90,Happiness:80,Smarts:70,Looks:60},log:[]});
+const life=id=>({id,name:'Sam Smith',city:'New York City',age:18,birthYear:2000,balance:1000,stats:{Health:90,Happiness:80,Intelligence:70,Appearance:60},log:[]});
 test('only compliments, conversations and gifts have reaction meters; all valid actions have outcome text',()=>{
  const current=life('response-bars'),people=characters(current),friend=people.personal.find(p=>p.id==='maya-chen');
  for(const person of [friend,people.personal[0],characters({...current,age:12}).school.find(p=>p.relation==='Teacher')]){
@@ -31,7 +31,7 @@ test('gift result reflects its actual effect; repeat outcomes clearly report no 
  const before=life('gift-results'),person=characters(before).personal[0];
  const after=interact(before,person.id,'Gift','soap'),result=interactionResult(before,after,person,'Gift','soap');assert.ok(result.change<0);assert.ok(result.meter.value<=15);assert.match(result.text,/deodorant/);
  const currentPerson=characters(after).personal.find(p=>p.id===person.id),repeat=interact(after,person.id,'Gift','flowers');
- const repeated=interactionResult(after,repeat,currentPerson,'Gift','flowers');assert.equal(repeated.change,0);assert.ok(repeated.meter.value>=0 && repeated.meter.value<=100);assert.equal(repeated.note,'You already received the effect of this interaction this year.');
+ const repeated=interactionResult(after,repeat,currentPerson,'Gift','flowers');assert.equal(repeated.change,0);assert.equal(repeated.meter,undefined);assert.match(repeated.text,/already|wait|occasion|gesture/i);
 });
 
 test('family and teacher actions use familiar forms of address while preserving full profile names',()=>{

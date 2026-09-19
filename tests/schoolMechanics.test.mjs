@@ -9,11 +9,11 @@ import {attractedTo,npcSexuality} from '../src/preferences.ts';
 import {generateFamily} from '../src/family.ts';
 import {parseStore,upsertLife,emptyStore,restartLife} from '../src/saves.ts';
 import {advanceYear,answerLifeEvent} from '../src/mail.ts';
-const life=(age=14,id='school-mechanics')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Straight',stats:{Health:70,Happiness:60,Smarts:60,Looks:60},log:[]});
+const life=(age=14,id='school-mechanics')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Straight',stats:{Health:70,Happiness:60,Intelligence:60,Appearance:60},log:[]});
 const saved=current=>parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
-test('school stages start with Smarts-based grades; studying boosts grades and smarts once yearly',()=>{
- for(const age of [6,10,14]){const before=life(age-1),occupation=advanceOccupation(before,age);assert.equal(occupation.school.grades,before.stats.Smarts);}
- const before=life(),studied=schoolAction(before,'Study harder');assert.equal(studied.stats.Smarts,61);assert.equal(studied.occupation.school.grades,70);assert.equal(schoolAction(studied,'Study harder').stats.Smarts,61);assert.equal(schoolAction(studied,'Study hard').occupation.school.grades,70);
+test('school stages start with Intelligence-based grades; studying boosts grades and intelligence once yearly',()=>{
+ for(const age of [6,10,14]){const before=life(age-1),occupation=advanceOccupation(before,age);assert.equal(occupation.school.grades,before.stats.Intelligence);}
+ const before=life(),studied=schoolAction(before,'Study harder');assert.equal(studied.stats.Intelligence,61);assert.equal(studied.occupation.school.grades,70);assert.equal(schoolAction(studied,'Study harder').stats.Intelligence,61);assert.equal(schoolAction(studied,'Study hard').occupation.school.grades,70);
  assert.deepEqual(saved(studied),studied);const next={...studied,age:15,occupation:advanceOccupation(studied,15)};assert.equal(schoolAction(next,'Study harder').occupation.school.grades,80);
 });
 test('popularity is average classmate relationship strength, excluding staff, and updates after interactions',()=>{
@@ -32,7 +32,7 @@ test('school actions have stage ordering, dropout age gates, nurse recovery and 
  assert.deepEqual(schoolActions(6),['Change schools','Drop out','Nurse','Study harder']);assert.ok(!schoolActions(6).includes('Skip school'));assert.ok(schoolActions(10).includes('Skip school'));assert.deepEqual(schoolActions(14).slice(1,4),['Nurse','School dance','Drop out']);
  const before=life(15);assert.equal(schoolAction(before,'Drop out'),before);const young=life(9);assert.equal(schoolAction(young,'Skip school'),young);
  const nursed=schoolAction(before,'Nurse');assert.equal(nursed.stats.Health,70);assert.match(schoolAction(nursed,'Nurse').log.at(-1).text,/reprimanded/);
- let lostSmarts=false;for(let i=0;i<30;i++){const current=life(12,`skip-${i}`),skipped=schoolAction(current,'Skip school');assert.equal(skipped.stats.Happiness,65);assert.equal(skipped.occupation.school.grades,55);assert.equal(skipped.stats.Smarts,59);}
+ let lostIntelligence=false;for(let i=0;i<30;i++){const current=life(12,`skip-${i}`),skipped=schoolAction(current,'Skip school');assert.equal(skipped.stats.Happiness,65);assert.equal(skipped.occupation.school.grades,55);assert.equal(skipped.stats.Intelligence,59);}
  let dropout=saved(schoolAction(life(16),'Drop out'));assert.equal(dropout.occupation.school,null);assert.equal(dropout.occupation.droppedOut,true);
  dropout=answerLifeEvent(advanceYear(dropout),0);const adult=advanceYear(dropout);assert.equal(adult.age,18);assert.equal(adult.occupation.highestEducation,'Middle school');assert.equal(adult.occupation.school,null);assert.notEqual(adult.pendingEvent.event.title,'Congratulations, graduate!');assert.equal(restartLife(adult).occupation,undefined);
 });
@@ -61,7 +61,7 @@ test('friend dance invitations use average friend strength; solo enjoyment can h
  assert.equal(high,30);assert.equal(low,0);assert.ok(soloGood>0);
 });
 
-test('Health and Athleticism drive sports tryouts and shared activities build classmate relationships',()=>{
- let high=0,low=0,shared=false;for(let i=0;i<120;i++){for(const strong of [false,true]){const current={...life(14,`athlete-${i}`),stats:{...life().stats,Health:strong?100:0,Athleticism:strong?100:0}};const next=applySchoolActivity(current,'basketball');if(next.occupation.school.activityAttempts.basketball.accepted){strong?high++:low++;const peer=next.occupation.school.roster.find(p=>p.relation==='Classmate'&&p.sports?.includes('basketball'));if(peer){assert.equal(next.relationships[peer.id].strength,Math.min(100,peer.strength+20));shared=true;}}}}
+test('Health drives sports tryouts and shared activities build classmate relationships',()=>{
+ let high=0,low=0,shared=false;for(let i=0;i<120;i++){for(const strong of [false,true]){const current={...life(14,`athlete-${i}`),stats:{...life().stats,Health:strong?100:0}};const next=applySchoolActivity(current,'basketball');if(next.occupation.school.activityAttempts.basketball.accepted){strong?high++:low++;const peer=next.occupation.school.roster.find(p=>p.relation==='Classmate'&&p.sports?.includes('basketball'));if(peer){assert.equal(next.relationships[peer.id].strength,Math.min(100,peer.strength+20));shared=true;}}}}
  assert.ok(high>low+50);assert.ok(shared);
 });

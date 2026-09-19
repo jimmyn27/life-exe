@@ -4,7 +4,7 @@ import {generateFamily, promotionChance, siblingBirthChance} from '../src/family
 import {characters,availableActions,interact,actionUnavailable} from '../src/relationships.ts';
 import {restartLife,parseStore,upsertLife,emptyStore} from '../src/saves.ts';
 import {advanceYear,answerLifeEvent} from '../src/mail.ts';
-const create=id=>restartLife({id,name:'Sam Smith',firstName:'Sam',lastName:'Smith',city:'New York City',birthYear:2000,age:0,balance:0,stats:{Health:90,Happiness:80,Smarts:70,Looks:60},log:[],family:generateFamily(id,'Smith')});
+const create=id=>restartLife({id,name:'Sam Smith',firstName:'Sam',lastName:'Smith',city:'New York City',birthYear:2000,age:0,balance:0,stats:{Health:90,Happiness:80,Intelligence:70,Appearance:60},log:[],family:generateFamily(id,'Smith')});
 test('birth has a complete introduction and no popup; single mothers and older siblings occur',()=>{
  let single=0,older=0;
  for(let i=0;i<100;i++) {const life=create('birth'+i);assert.equal(life.pendingEvent,undefined);assert.match(life.log[0].text,/I was born a (male|female) in New York City, United States/);assert.match(life.log[0].text,/My name is Sam Smith/);assert.match(life.log[0].text,/My mother is/);if(life.family.parents.length===1){single++;assert.ok(life.family.parents[0].name.endsWith(' Smith'));assert.doesNotMatch(life.log[0].text,/My father is/);}older+=life.family.siblings.length;for(const s of life.family.siblings)assert.ok(life.family.parents[0].ageAtBirth+s.birthAge>=18);}

@@ -7,7 +7,7 @@ import {newMembership,membershipInfo,scheduleHours,scheduleBreakdown,advanceComm
 import {advanceClassmate,npcBaseStats,classmatePopularity} from '../src/npcSchool.ts';
 import {advanceYear} from '../src/mail.ts';
 import {parseStore,upsertLife,emptyStore} from '../src/saves.ts';
-const life=(age=14,id='commitments')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:70,Happiness:60,Smarts:60,Looks:60},log:[]});
+const life=(age=14,id='commitments')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:70,Happiness:60,Intelligence:60,Appearance:60},log:[]});
 const enrolled=(ids=['basketball'],age=14,id='commitments')=>{const current=life(age,id),occupation=getOccupation(current);return {...current,occupation:{...occupation,school:{...occupation.school,memberships:ids,activityDetails:Object.fromEntries(ids.map(id=>[id,newMembership(age)]))}}};};
 const saved=current=>parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
 test('accepted memberships start at fifty performance, first rank, zero years and five hours',()=>{
@@ -39,10 +39,10 @@ test('sucking up by five reduces every classmate relationship and popularity onl
  const current=life(),people=characters(current),staff=people.school.find(p=>p.relation==='Teacher'),peers=people.school.filter(p=>p.relation==='Classmate');const before=getOccupation(current).school.popularity,after=interact(current,staff.id,'Suck up');
  for(const peer of peers)assert.equal(after.relationships[peer.id].strength,peer.strength-5);assert.ok(after.occupation.school.popularity<before);const repeated=interact(after,staff.id,'Suck up');for(const peer of peers)assert.equal(repeated.relationships[peer.id].strength,after.relationships[peer.id].strength);saved(after);
 });
-test('classmate grades start at smarts, fluctuate annually and reset at stage transition; sports add more popularity than clubs',()=>{
- const peer={id:'npc-student',name:'Alex Smith',gender:'Male',ageOffset:0,relation:'Classmate',group:'Classmates',strength:50};const initial=advanceClassmate(peer,'npc-life',6);assert.equal(initial.grades,npcBaseStats(peer.id).Smarts);
+test('classmate grades start at intelligence, fluctuate annually and reset at stage transition; sports add more popularity than clubs',()=>{
+ const peer={id:'npc-student',name:'Alex Smith',gender:'Male',ageOffset:0,relation:'Classmate',group:'Classmates',strength:50};const initial=advanceClassmate(peer,'npc-life',6);assert.equal(initial.grades,npcBaseStats(peer.id).Intelligence);
  let up=0,down=0;for(let i=0;i<30;i++){const old={...initial,grades:70,gradeAge:6},next=advanceClassmate(old,`npc-${i}`,7);if(next.grades>70)up++;if(next.grades<70)down++;assert.deepEqual(advanceClassmate(next,`npc-${i}`,7),next);}assert.ok(up>0 && down>0);
- const transition=advanceClassmate({...initial,grades:10,gradeAge:9},'npc-life',10,true);assert.equal(transition.grades,npcBaseStats(peer.id).Smarts);assert.ok(classmatePopularity({...peer,sports:['soccer']},60)>classmatePopularity({...peer,clubs:['chess']},60));
+ const transition=advanceClassmate({...initial,grades:10,gradeAge:9},'npc-life',10,true);assert.equal(transition.grades,npcBaseStats(peer.id).Intelligence);assert.ok(classmatePopularity({...peer,sports:['soccer']},60)>classmatePopularity({...peer,clubs:['chess']},60));
  const classmates=characters(life(14)).school.filter(p=>p.relation==='Classmate');assert.ok(classmates.every(p=>typeof p.grades==='number' && typeof p.popularity==='number'));
 });
 test('save validation rejects malformed membership hours, performance and years',()=>{

@@ -9,22 +9,22 @@ import {interactionConfirmation} from '../src/interactionConfirmations.ts';
 import {schoolDance} from '../src/schoolDance.ts';
 import {advanceYear} from '../src/mail.ts';
 import {emptyStore,upsertLife,parseStore} from '../src/saves.ts';
-const life=(age=16,id='work-action')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Bisexual',stats:{Health:80,Happiness:70,Smarts:70,Looks:70},log:[]});
+const life=(age=16,id='work-action')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Bisexual',stats:{Health:80,Happiness:70,Intelligence:70,Appearance:70},log:[]});
 const enrolled=(hours=20)=>{const l=life(),occupation=getOccupation(l);return {...l,occupation:{...occupation,school:{...occupation.school,memberships:['chess','basketball'],activityDetails:{chess:{...newMembership(16),hours:hours/2},basketball:{...newMembership(16),hours:hours/2}}}}};};
 const saved=l=>parseStore(JSON.stringify(upsertLife(emptyStore(),l))).lives[0];
-test('applying above sixty rejects jobs and activities without attempts, money or stat effects; replacing a job removes its old hours',()=>{
+test('applying above sixty rejects jobs and activities without attempts, money or stat effects; adding a job keeps existing job hours',()=>{
  const full=enrolled();assert.equal(scheduleHours(full),60);assert.equal(applySchoolActivity(full,'science'),full);assert.equal(takePartTimeJob(full,'library-aide'),full);
- const old=takePartTimeJob(life(),'library-aide'),offer=partTimeOffers(old).find(j=>j.id==='cashier');assert.equal(projectedJobHours(old,offer.weeklyHours),40+offer.weeklyHours);assert.ok(takePartTimeJob(old,'cashier')!==old);
+ const old=takePartTimeJob(life(18),'library-aide'),offer=partTimeOffers(old).find(j=>j.id==='cashier');assert.equal(projectedJobHours(old,offer.weeklyHours),scheduleHours(old)+offer.weeklyHours);assert.ok(takePartTimeJob(old,'cashier')!==old);
 });
 test('more hours and raises depend on tenure and performance, save and never exceed twenty or sixty; requests and training apply once yearly',()=>{
  assert.ok(workRequestChance(5,90)>workRequestChance(0,50));let hoursWon=false,raiseWon=false;
  for(let i=0;i<100;i++){const hired=takePartTimeJob(life(16,`request-${i}`),'library-aide');hired.occupation.job.performance=90;hired.occupation.job.startAge=14;hired.occupation.job.weeklyHours=10;hired.occupation.job.hours='Part-time · 10 hours / week';
- const hours=workAction(hired,'Hours');assert.ok(hours.life.occupation.job.weeklyHours<=20);assert.ok(scheduleHours(hours.life)<=60);const retryHours=workAction(hours.life,'Hours').life;assert.equal(retryHours.stats.Happiness,hours.life.stats.Happiness);saved(hours.life);hoursWon ||=hours.life.occupation.job.weeklyHours>10;
- const raise=workAction(hired,'Raise');raiseWon ||=raise.life.occupation.job.hourlyWage>hired.occupation.job.hourlyWage;assert.equal(workAction(raise.life,'Raise').life,raise.life);saved(raise.life);
- const trained=workAction(hired,'Work harder');assert.equal(trained.life.occupation.job.performance,100);assert.equal(workAction(trained.life,'Work harder').life,trained.life);assert.equal(workAction(hired,'Resign').life.occupation.job,null);
+ const hours=workAction(hired,hired.occupation.job.id,'Hours');assert.ok(hours.life.occupation.job.weeklyHours<=20);assert.ok(scheduleHours(hours.life)<=60);const retryHours=workAction(hours.life,hours.life.occupation.job.id,'Hours').life;assert.equal(retryHours.stats.Happiness,hours.life.stats.Happiness);saved(hours.life);hoursWon ||=hours.life.occupation.job.weeklyHours>10;
+ const raise=workAction(hired,hired.occupation.job.id,'Raise');raiseWon ||=raise.life.occupation.job.hourlyWage>hired.occupation.job.hourlyWage;assert.equal(workAction(raise.life,raise.life.occupation.job.id,'Raise').life,raise.life);saved(raise.life);
+ const trained=workAction(hired,hired.occupation.job.id,'Work harder');assert.equal(trained.life.occupation.job.performance,100);assert.equal(workAction(trained.life,trained.life.occupation.job.id,'Work harder').life,trained.life);assert.equal(workAction(hired,hired.occupation.job.id,'Resign').life.occupation.job,null);
  }
  assert.ok(hoursWon && raiseWon);
- const hired=takePartTimeJob(life(),'library-aide'),remaining=20-hired.occupation.job.weeklyHours;const l={...hired,occupation:{...hired.occupation,school:{...hired.occupation.school,memberships:remaining?['chess']:[],activityDetails:remaining?{chess:{...newMembership(16),hours:remaining}}:{}}}};saved(l);assert.equal(scheduleHours(l),60);assert.equal(workAction(l,'Hours').life,l);
+ const hired=takePartTimeJob(life(),'library-aide'),remaining=20-hired.occupation.job.weeklyHours;const l={...hired,occupation:{...hired.occupation,school:{...hired.occupation.school,memberships:remaining?['chess']:[],activityDetails:remaining?{chess:{...newMembership(16),hours:remaining}}:{}}}};saved(l);assert.equal(scheduleHours(l),60);assert.equal(workAction(l,l.occupation.job.id,'Hours').life,l);
 });
 test('natural yearly performance gains apply to work, clubs and sports, and positive manager interactions can improve performance once yearly',()=>{
  const hired=takePartTimeJob(life(),'library-aide'),next=advanceYear(hired);assert.equal(next.occupation.job.performance,hired.occupation.job.performance+10);

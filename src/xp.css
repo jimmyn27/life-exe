@@ -103,8 +103,8 @@
 .stat-label strong{font-weight:normal;color:#718399}
 .stat-track{height:11px;border:1px solid #94a8bf;background:#f4f6f8;padding:1px;border-radius:2px}
 .stat-track>div{height:100%;background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#b2df7e,#64ad3f);border-radius:1px}
-.stat-smarts>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#9bd1ff,#5696dd)}
-.stat-looks>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#f6df8b,#ddb245)}
+.stat-intelligence>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#9bd1ff,#5696dd)}
+.stat-appearance>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#f6df8b,#ddb245)}
 .my-life-folders{display:flex;gap:16px}
 .my-life-folders button{background:none;border:0;display:flex;align-items:center;gap:5px;color:#234e8c}
 .my-life-folders .xp-icon{width:29px;height:29px}
@@ -340,8 +340,8 @@
 .manager-table td,.finance-table td{padding:8px 9px;border-bottom:1px solid #eff1f3}
 .manager-table td:last-child,.manager-table th:last-child{text-align:right}
 .manager-indicator{display:inline-block;width:9px;height:9px;margin-right:8px;border:1px solid #518c2e;background:#8ac053}
-.indicator-smarts{border-color:#507aaf;background:#7cafe7}
-.indicator-looks{border-color:#ba9d3e;background:#e4c258}
+.indicator-intelligence{border-color:#507aaf;background:#7cafe7}
+.indicator-appearance{border-color:#ba9d3e;background:#e4c258}
 .manager-performance{border:1px solid #a4aaa6;margin:0;padding:12px}
 .manager-performance legend{font-size:11px;color:#4c6380;padding:0 5px}
 .manager-performance .stat{margin-bottom:14px}
@@ -550,3 +550,27 @@
 .profile-link{border:0;background:transparent;padding:0;color:#1655a5;text-decoration:underline;cursor:pointer}.contact-group>h3{font-size:12px;background:#e8f0fa;padding:9px;margin:8px 0 0;color:#285581}.school-actions{max-width:560px;margin:16px auto 0}.school-actions button{text-align:left}
 
 .contact-group>h3{background:transparent;font-size:11px;font-weight:normal;color:#5c6c7e;padding:7px 0;border-bottom:1px solid #e4eaf2;margin:0}.confirmation-profile{margin:12px 0}.confirmation-profile fieldset{margin:10px 0}.work-actions{margin-top:16px}
+
+.web-brand-widgets{margin-left:auto;display:flex;align-items:stretch;justify-content:flex-end;gap:7px;min-width:0}
+.web-brand-widgets .home-widget{min-width:126px;padding:5px 8px;gap:3px;font-size:10px}
+.web-brand-widgets .home-widget>strong{font-size:10px}
+.web-brand-widgets .home-widget>span{font-size:12px;font-weight:bold;text-align:right}
+.web-brand-widgets .home-schedule{width:176px;flex:0 1 176px}
+.web-brand-widgets .stress-row{gap:5px}
+.web-brand-widgets .stress-row>span{font-size:9px}
+.schedule-breakdown{list-style:none;padding-left:0}
+.schedule-breakdown li{margin:7px 0}
+.schedule-breakdown button{width:100%;border:1px solid #a7b9d0;border-radius:2px;background:linear-gradient(#fff,#edf3fb);padding:8px 10px;text-align:left;color:#174e91;cursor:pointer}
+.schedule-breakdown button:hover{background:#e4effc;border-color:#6e97ca}
+.membership-action-list{margin-top:10px}
+.job-position-card+ .job-position-card{display:block;margin-top:16px;border-top:1px solid #c8d6e6;padding-top:16px}
+@media(max-width:670px){
+ .web-brand{gap:6px;padding:9px}
+ .web-brand>.xp-icon{width:28px;height:28px}
+ .web-brand>span{font-size:18px}
+ .web-brand-widgets{gap:4px;flex:1}
+ .web-brand-widgets .home-widget{min-width:88px;padding:4px 5px}
+ .web-brand-widgets .home-schedule{width:125px;flex-basis:125px}
+ .web-brand-widgets .stress-row>span{display:none}
+ .web-brand-widgets .stress-row .relationship-meter{min-width:45px}
+}
