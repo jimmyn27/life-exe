@@ -4,7 +4,7 @@ import { SAVE_KEY, clearPrototypeSaves, emptyStore, parseStore, persistStore, lo
 import { eventForAge } from '../src/lifeEvents.ts';
 import {childhoodEventPools} from '../src/childhoodEvents.ts';
 
-const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Intelligence: 76, Appearance: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
+const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Intelligence: 76, Charisma: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born in Toronto.' }] });
 function storage() { const values = new Map(); return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) }; }
 
 test('saving and reloading multiple characters preserves each life and active character', () => {
@@ -100,4 +100,11 @@ test('prototype reset removes old saves and backups while retaining new playtest
   assert.equal(values.has('life.exe.saves.v1.backup'), false);
   assert.equal(values.get(SAVE_KEY), 'new');
   assert.equal(values.get('other-site-data'), 'keep');
+});
+
+test('legacy Appearance saves upgrade to Charisma and yearly activities reset on restart',()=>{
+ const disk=storage(),legacy={...life(),stats:{Health:94,Happiness:82,Intelligence:76,Appearance:68},activityActions:{age:18,ids:['book','walk']}};
+ disk.setItem(SAVE_KEY,JSON.stringify(upsertLife(emptyStore(),legacy)));
+ const loaded=loadStore(disk).lives[0];assert.equal(loaded.stats.Charisma,68);assert.equal('Appearance' in loaded.stats,false);assert.deepEqual(loaded.activityActions.ids,['book','walk']);assert.equal(restartLife(loaded).activityActions,undefined);
+ assert.throws(()=>parseStore(JSON.stringify(upsertLife(emptyStore(),{...life(),activityActions:{age:18,ids:['book','book']}}))));
 });

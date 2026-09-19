@@ -1,9 +1,9 @@
-export type Stats = { Health: number; Happiness: number; Intelligence: number; Appearance: number };
+export type Stats = { Health: number; Happiness: number; Intelligence: number; Charisma: number };
 export type Entry = { age: number; tag: string; text: string };
 export type FamilyRelationshipEffect = { parents?: number; siblings?: number };
 export type Choice = { label: string; hint: string; disabled?: boolean; outcome: string; effect?: Partial<Stats>; familyEffect?: FamilyRelationshipEffect; jobDecision?:{id:string}; friendshipDecision?:{id:string;salvage:boolean}; relationshipResponse?:{id:string;accept:boolean}; membershipAction?:{id:string;action:import('./schoolCommitments').MembershipAction}; schoolActivityDecision?:{id:string}; workAction?:{jobId:string;action:import('./partTimeWork').WorkAction;direction?:import('./partTimeWork').HoursDirection}; schoolAction?: import('./occupation').SchoolAction; schoolEffect?: { grades?: number; popularity?: number }; relationship?: { id: string; action: import('./relationships').RelationshipAction; giftId?: string;invited?:boolean } };
 export type LifeEvent = { acknowledge?:boolean; icon?:string; meters?:{name:string;value:number}[]; profileId?:string; category: string; title: string; text: string; choices: Choice[] };
-export const initialStats: Stats = { Health: 94, Happiness: 82, Intelligence: 76, Appearance: 68 };
+export const initialStats: Stats = { Health: 94, Happiness: 82, Intelligence: 76, Charisma: 68 };
 export const events: LifeEvent[] = [
   { category: 'Social event', title: 'An unexpected invitation', text: 'Your friend Maya invites you on a weekend camping trip. You have been meaning to spend more time together. How will you respond?', choices: [
     { label: 'Pack a bag and go', hint: 'Make a little room for adventure.', outcome: 'I went camping with Maya. We stayed up talking under the stars.', effect: { Happiness: 5 } },

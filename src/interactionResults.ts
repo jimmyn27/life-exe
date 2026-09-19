@@ -24,11 +24,12 @@ const repeatedLines:Partial<Record<RelationshipAction,string[]>>={
  'Spend time':['You had already made meaningful time for each other this year.','You spent more time together, but the relationship had already gained all it could this year.','You enjoyed another outing together, although it did not bring you any closer this year.']
 };
 const pick=<T,>(items:T[],random:()=>number)=>items[Math.floor(random()*items.length)];
+const genderText=(text:string,person:Person)=>{const female=person.gender==='Female';return text.replace(/\bthem\b/gi,match=>match[0]===match[0].toUpperCase()?(female?'Her':'Him'):(female?'her':'him')).replace(/\btheir\b/gi,match=>match[0]===match[0].toUpperCase()?(female?'Her':'His'):(female?'her':'his')).replace(/\bthey\b/gi,match=>match[0]===match[0].toUpperCase()?(female?'She':'He'):(female?'she':'he'));};
 export function reaction(life:Life,person:Person,action:RelationshipAction,giftId?:string){
  const random=seededRandom(`${life.id}:${person.id}:${life.age}:${action}:${life.log.length}:response`),sample=random(),relationship=person.strength;
  let value=Math.max(0,Math.min(100,Math.round(relationship*.65+sample*35))),delta=0;
  if(action==='Conversation'){value=Math.max(0,Math.min(100,Math.round(relationship*.45+sample*55)));delta=-5+Math.round(value*.15);}
- else if(action==='Flirt'){value=Math.max(0,Math.min(100,Math.round(life.stats.Appearance*.65+relationship*.25+sample*10)));delta=-10+Math.round(value*.35);}
+ else if(action==='Flirt'){value=Math.max(0,Math.min(100,Math.round(life.stats.Charisma*.65+relationship*.25+sample*10)));delta=-10+Math.round(value*.35);}
  else if(action==='Suck up')delta=-10+Math.round(value*.3);else if(action==='Compliment')delta=Math.round(value*.25);
  const topics=life.age<6?childTopics:olderTopics;
  const rawText=action==='Suck up'?`You told ${personAddress(person)} their class is your favorite.`:action==='Compliment'?pick(compliments,random).replace('NAME',personAddress(person)):action==='Conversation'?`You and ${personAddress(person)} talked about ${pick(topics,random)}.`:action==='Flirt'?`You flirted with ${personAddress(person)}.`:'';
@@ -44,7 +45,7 @@ export function interactionResult(before:Life,after:Life,person:Person,action:Re
  if(action==='Insult'&&followRandom<.25)followUp={category:'Insult',title:`${person.name} insulted you`,text:`${person.name.split(' ')[0]} called you an annoying loser.`,acknowledge:true,choices:[{label:'OK',hint:'',outcome:`${person.name} insulted me back.`,effect:{Happiness:-10}}]};
  if(action==='Flirt'&&response.value===100&&sameAgeGroup){const kind=followRandom<.25?(before.age>=18?'hook':before.age>=16?'fun':null):followRandom<.35?'date':null;if(kind&&(kind!=='date'||!dating)){const label=kind==='date'?'Ask out':kind==='hook'?'Hook up':'Have fun';followUp={category:'Invitation',title:kind==='date'?'An invitation to date':'An invitation',text:kind==='date'?`${person.name} asks if you would like to be ${person.gender==='Female'?'her':'his'} ${before.family?.gender==='Female'?'girlfriend':'boyfriend'}.`:`${person.name} asks if you would like to ${kind==='hook'?'hook up':'go out and have fun'}.`,choices:[{label:'Accept',hint:'',outcome:'',relationship:{id:person.id,action:label,invited:true}},{label:'Decline politely',hint:'',outcome:`I declined ${person.name}'s invitation.`,relationshipResponse:{id:person.id,accept:false}}]};}}
  const standardText=hasBar?response.text:log.replace(/^I was /,'You were ').replace(/^I /,'You ').replace(/my /g,'your ').replace(/We /g,'You both ').replace(/our relationship/g,'your relationship').replace(/my friendship/g,'your friendship');
- const repeatRandom=seededRandom(`${before.id}:${person.id}:${before.age}:${action}:${before.log.length}:repeat-text`),text=repeated&&repeatedLines[action]?.length?pick(repeatedLines[action]!,repeatRandom):standardText,target=personAddress(person,'label');
+ const repeatRandom=seededRandom(`${before.id}:${person.id}:${before.age}:${action}:${before.log.length}:repeat-text`),text=genderText(repeated&&repeatedLines[action]?.length?pick(repeatedLines[action]!,repeatRandom):standardText,person),target=personAddress(person,'label');
  const titles:Record<RelationshipAction,string[]>={
   'Break up':[`Breaking up with ${target}`,`Ending things with ${target}`,'A difficult goodbye','Going separate ways','The end of a relationship'],
   Befriend:[`A new friendship with ${target}`,`Reaching out to ${target}`,'Becoming friends','Making a new connection',`Getting to know ${target}`],
@@ -64,6 +65,6 @@ export function interactionResult(before:Life,after:Life,person:Person,action:Re
   Disrespect:[`Disrespecting ${target}`,`Talking back to ${target}`,`Challenging ${target}`,'Showing no respect','A serious confrontation'],
   'Suck up':[`Trying to impress ${target}`,`Winning ${target} over`,'Looking for approval','Laying on the praise','Trying to become the favorite']
  };
- const titlePool=titles[action]??[`${interactionLabels[action]} with ${target}`],offset=Math.floor(seededRandom(`${before.id}:${person.id}:${action}:title-offset`)()*titlePool.length),title=titlePool[(offset+before.log.length)%titlePool.length];
+ const titlePool=titles[action]??[`${interactionLabels[action]} with ${target}`],offset=Math.floor(seededRandom(`${before.id}:${person.id}:${action}:title-offset`)()*titlePool.length),title=genderText(titlePool[(offset+before.log.length)%titlePool.length],person);
  return {title,icon:interactionEmojis[action],text,change,...(followUp?{followUp}:{}),...(['Have fun','Hook up','Make love'].includes(action)&&(romance.accepted||invited)&&!repeated?{bars:[{label:'Your Enjoyment',value:romance.yourEnjoyment},{label:`${pronoun} Enjoyment`,value:romance.theirEnjoyment}]}:{}),...(hasBar&&!repeated?{meter:{label:`${pronoun} ${action==='Conversation'?'agreement':action==='Flirt'?'receptiveness':'appreciation'}`,value:response.value}}:{})};
 }

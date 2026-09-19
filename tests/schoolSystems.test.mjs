@@ -9,7 +9,7 @@ import {advanceYear,answerLifeEvent} from '../src/mail.ts';
 import {characters,availableActions,interact} from '../src/relationships.ts';
 import {schoolActivities,applySchoolActivity,workCategories} from '../src/schoolActivities.ts';
 import {parseStore,upsertLife,emptyStore,restartLife,loadStore,SAVE_KEY} from '../src/saves.ts';
-const life=age=>({id:'school-system',name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:90,Happiness:80,Intelligence:70,Appearance:60},log:[]});
+const life=age=>({id:'school-system',name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:90,Happiness:80,Intelligence:70,Charisma:60},log:[]});
 const answer=next=>{while(next.pendingEvent)next=answerLifeEvent(next,0);return next;};
 const peers=current=>getOccupation(current).school.roster.filter(p=>p.relation==='Classmate');
 const staff=current=>getOccupation(current).school.roster.filter(p=>p.relation!=='Classmate');
@@ -65,7 +65,7 @@ test('malformed rosters, activity IDs, future attempts and friendship profiles a
 });
 
 test('legacy named school friends upgrade to persistent profiles on load',()=>{
- const current={...life(15),relationships:{'oliver-patel':{status:'friend',strength:80,stats:{Health:80,Happiness:70,Intelligence:60,Appearance:50}}}};
+ const current={...life(15),relationships:{'oliver-patel':{status:'friend',strength:80,stats:{Health:80,Happiness:70,Intelligence:60,Charisma:50}}}};
  const raw=JSON.stringify(upsertLife(emptyStore(),current));const loaded=loadStore({getItem:key=>key===SAVE_KEY?raw:null,setItem:()=>{}}).lives[0];
  assert.ok(characters(loaded).personal.some(person=>person.id==='oliver-patel' && person.name==='Oliver Patel'));assert.equal(loaded.relationships['oliver-patel'].friendship,true);saved(loaded);
 });

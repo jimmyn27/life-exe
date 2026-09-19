@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getOccupation, advanceOccupation, occupationContacts, schoolYear } from '../src/occupation.ts';
 import { advanceYear, answerLifeEvent, answerMail } from '../src/mail.ts';
 import { parseStore, emptyStore, upsertLife, restartLife } from '../src/saves.ts';
-const life = age => ({id:'occupation-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Intelligence:76,Appearance:68},log:[]});
+const life = age => ({id:'occupation-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Intelligence:76,Charisma:68},log:[]});
 const save = current => parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
 test('older saves get age-appropriate schooling without invented employment', () => {
   assert.equal(getOccupation(life(0)).school,null);

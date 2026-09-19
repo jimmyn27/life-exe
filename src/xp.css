@@ -104,7 +104,7 @@
 .stat-track{height:11px;border:1px solid #94a8bf;background:#f4f6f8;padding:1px;border-radius:2px}
 .stat-track>div{height:100%;background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#b2df7e,#64ad3f);border-radius:1px}
 .stat-intelligence>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#9bd1ff,#5696dd)}
-.stat-appearance>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#f6df8b,#ddb245)}
+.stat-charisma>div{background:repeating-linear-gradient(90deg,transparent 0 7px,#fff7 7px 9px),linear-gradient(#f6df8b,#ddb245)}
 .my-life-folders{display:flex;gap:16px}
 .my-life-folders button{background:none;border:0;display:flex;align-items:center;gap:5px;color:#234e8c}
 .my-life-folders .xp-icon{width:29px;height:29px}
@@ -341,7 +341,7 @@
 .manager-table td:last-child,.manager-table th:last-child{text-align:right}
 .manager-indicator{display:inline-block;width:9px;height:9px;margin-right:8px;border:1px solid #518c2e;background:#8ac053}
 .indicator-intelligence{border-color:#507aaf;background:#7cafe7}
-.indicator-appearance{border-color:#ba9d3e;background:#e4c258}
+.indicator-charisma{border-color:#ba9d3e;background:#e4c258}
 .manager-performance{border:1px solid #a4aaa6;margin:0;padding:12px}
 .manager-performance legend{font-size:11px;color:#4c6380;padding:0 5px}
 .manager-performance .stat{margin-bottom:14px}

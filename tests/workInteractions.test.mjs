@@ -9,7 +9,7 @@ import {interactionConfirmation} from '../src/interactionConfirmations.ts';
 import {schoolDance} from '../src/schoolDance.ts';
 import {advanceYear} from '../src/mail.ts';
 import {emptyStore,upsertLife,parseStore} from '../src/saves.ts';
-const life=(age=16,id='work-action')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Bisexual',stats:{Health:80,Happiness:70,Intelligence:70,Appearance:70},log:[]});
+const life=(age=16,id='work-action')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Bisexual',stats:{Health:80,Happiness:70,Intelligence:70,Charisma:70},log:[]});
 const enrolled=(hours=20)=>{const l=life(),occupation=getOccupation(l);return {...l,occupation:{...occupation,school:{...occupation.school,memberships:['chess','basketball'],activityDetails:{chess:{...newMembership(16),hours:hours/2},basketball:{...newMembership(16),hours:hours/2}}}}};};
 const saved=l=>parseStore(JSON.stringify(upsertLife(emptyStore(),l))).lives[0];
 test('applying above sixty rejects jobs and activities without attempts, money or stat effects; adding a job keeps existing job hours',()=>{

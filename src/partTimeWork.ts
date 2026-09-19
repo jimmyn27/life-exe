@@ -5,12 +5,12 @@ import {seededRandom} from './family.ts';
 import {initializeWorkRelationships} from './relationships.ts';
 import type {Life} from './saves';
 
-export function partTimeOffers(life:Life){return partTimeJobs.filter(job=>life.age>=job.minimumAge).map(job=>{const random=seededRandom(`${life.id}:${job.id}:${life.age}:offer`);return {...job,hourlyWage:Math.round((job.hourlyWageRange[0]+random()*(job.hourlyWageRange[1]-job.hourlyWageRange[0]))*100)/100,weeklyHours:10+Math.floor(random()*11)};});}
+export function partTimeOffers(life:Life){return partTimeJobs.filter(job=>life.age>=job.minimumAge).filter(job=>job.id==='library-aide'||seededRandom(`${life.id}:${job.id}:${life.age}:availability`)()<.68).map(job=>{const random=seededRandom(`${life.id}:${job.id}:${life.age}:offer`);return {...job,hourlyWage:Math.round(job.hourlyWageRange[0]+random()*(job.hourlyWageRange[1]-job.hourlyWageRange[0])),weeklyHours:10+Math.floor(random()*11)};});}
 export function takePartTimeJob(life:Life,id:string):Life{
  if(life.pendingEvent)return life;const offer=partTimeOffers(life).find(j=>j.id===id),occupation=getOccupation(life),jobs=occupationJobs(occupation);
  if(!offer || jobs.some(job=>job.id===id) || projectedJobHours(life,offer.weeklyHours)>scheduleLimit)return life;
  const job:Job={id,position:offer.title,employer:`${offer.title==='Babysitter'||offer.title==='Pet sitter'?'Neighborhood families':'Local '+offer.title.replace(/ worker| assistant| aide| attendant/i,'')}`,salary:Math.round(offer.hourlyWage*offer.weeklyHours*52*100)/100,performance:50,startAge:life.age,hours:`Part-time · ${offer.weeklyHours} hours / week`,hourlyWage:offer.hourlyWage,weeklyHours:offer.weeklyHours};
- return initializeWorkRelationships({...life,occupation:withOccupationJobs(occupation,[...jobs,job]),log:[...life.log,{age:life.age,tag:'WORK',text:`I started working as a ${offer.title.toLowerCase()} for $${offer.hourlyWage.toFixed(2)} an hour, ${offer.weeklyHours} hours a week.`}]});
+ return initializeWorkRelationships({...life,occupation:withOccupationJobs(occupation,[...jobs,job]),log:[...life.log,{age:life.age,tag:'WORK',text:`I started working as a ${offer.title.toLowerCase()} for $${offer.hourlyWage.toFixed(0)} an hour, ${offer.weeklyHours} hours a week.`}]});
 }
 export const yearlyPartTimePay=(jobs:Job[]|Job|null|undefined)=>{const list=Array.isArray(jobs)?jobs:jobs?[jobs]:[];return Math.round(list.reduce((sum,job)=>sum+(job.hourlyWage!==undefined&&job.weeklyHours!==undefined?job.hourlyWage*job.weeklyHours*52:0),0)*100)/100;};
 
@@ -38,7 +38,7 @@ export function workAction(life:Life,jobId:string,action:WorkAction,direction:Ho
   if(random()<workRequestChance(life.age-job.startAge,job.performance)){const change=1+Math.floor(random()*room);updated.weeklyHours=job.weeklyHours+(direction==='more'?change:-change);updated.hours=`Part-time · ${updated.weeklyHours} hours / week`;text=`Your manager approved your request. You now work ${updated.weeklyHours} hours a week.`;}
   else {updated.hoursRequestRejectedAge=life.age;text=`Your manager declined your request for ${direction} hours.`;happiness=-10;}
  }
- if(action==='Raise'){if(currentActions.includes(action))return reject('Your manager asked you to wait before requesting another raise.');if(random()<workRequestChance(life.age-job.startAge,job.performance)){updated.hourlyWage=Math.round(job.hourlyWage*(1.02+random()*.08)*100)/100;text=`Your manager approved a raise to $${updated.hourlyWage.toFixed(2)} an hour.`;}else text='Your manager declined your request for a raise.';}
+ if(action==='Raise'){if(currentActions.includes(action))return reject('Your manager asked you to wait before requesting another raise.');if(random()<workRequestChance(life.age-job.startAge,job.performance)){updated.hourlyWage=Math.max(job.hourlyWage+1,Math.round(job.hourlyWage*(1.02+random()*.08)));text=`Your manager approved a raise to $${updated.hourlyWage.toFixed(0)} an hour.`;}else text='Your manager declined your request for a raise.';}
  if(action==='Work harder'){updated.performance=clamp(job.performance+10);happiness=-5;text='You put in extra effort at work.';}
  updated.salary=Math.round(updated.hourlyWage!*updated.weeklyHours!*52*100)/100;
  const nextJobs=jobs.map((item,jobIndex)=>jobIndex===index?updated:item);

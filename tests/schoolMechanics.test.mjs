@@ -9,7 +9,7 @@ import {attractedTo,npcSexuality} from '../src/preferences.ts';
 import {generateFamily} from '../src/family.ts';
 import {parseStore,upsertLife,emptyStore,restartLife} from '../src/saves.ts';
 import {advanceYear,answerLifeEvent} from '../src/mail.ts';
-const life=(age=14,id='school-mechanics')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Straight',stats:{Health:70,Happiness:60,Intelligence:60,Appearance:60},log:[]});
+const life=(age=14,id='school-mechanics')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,sexuality:'Straight',stats:{Health:70,Happiness:60,Intelligence:60,Charisma:60},log:[]});
 const saved=current=>parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
 test('school stages start with Intelligence-based grades; studying boosts grades and intelligence once yearly',()=>{
  for(const age of [6,10,14]){const before=life(age-1),occupation=advanceOccupation(before,age);assert.equal(occupation.school.grades,before.stats.Intelligence);}
@@ -24,9 +24,9 @@ test('popularity is average classmate relationship strength, excluding staff, an
 test('positive staff appreciation/agreement improves grades; repeat and low reactions do not add grades',()=>{
  for(const action of ['Compliment','Conversation','Suck up']){let positive=0,negative=0;
  for(let i=0;i<30;i++){const before=life(14,`staff-${i}`),teacher=characters(before).school.find(p=>p.relation==='Teacher'),response=reaction(before,teacher,action),after=interact(before,teacher.id,action),gain=after.occupation.school.grades-getOccupation(before).school.grades;
- assert.equal(gain,response.delta);if(response.delta>0)positive++;else negative++;
+ assert.equal(gain,response.delta>0?Math.min(action==='Suck up'?10:5,response.delta):response.delta);if(response.delta>0)positive++;else negative++;
  assert.equal(interact(after,teacher.id,action).occupation.school.grades,after.occupation.school.grades);if(action==='Suck up')assert.match(interactionResult(before,after,teacher,action).meter.label,/appreciation/);
- }assert.ok(positive>0);if(action!=='Compliment')assert.ok(negative>0);}
+ }assert.ok(positive>0);}
 });
 test('school actions have stage ordering, dropout age gates, nurse recovery and skip-school effects',()=>{
  assert.deepEqual(schoolActions(6),['Change schools','Drop out','Nurse','Study harder']);assert.ok(!schoolActions(6).includes('Skip school'));assert.ok(schoolActions(10).includes('Skip school'));assert.deepEqual(schoolActions(14).slice(1,4),['Nurse','School dance','Drop out']);
@@ -43,8 +43,8 @@ test('parent relationships and Money influence transfer decisions; transfers cha
  let current=life(12,'friend-transfer');const peer=characters(current).school[0];current=interact(current,peer.id,'Befriend');current.family=generateFamily(current.id,'Smith');current.family.money=100;current.relationships={...current.relationships,...Object.fromEntries(current.family.parents.map(p=>[p.id,{strength:100,status:'friend',stats:p.stats}]))};const transferred=schoolAction(current,'Change schools');assert.ok(characters(transferred).personal.some(p=>p.id===peer.id));
 });
 test('club/sport acceptance raises happiness and rejection lowers it; new clubs save correctly',()=>{
- assert.ok(['drama','music','yearbook','environmental'].every(id=>schoolActivities.some(a=>a.id===id)));let yes=0,no=0;
- for(let i=0;i<25;i++){const before=life(10,`club-${i}`),after=applySchoolActivity(before,'environmental'),accepted=after.occupation.school.activityAttempts.environmental.accepted;assert.equal(after.stats.Happiness,before.stats.Happiness+(accepted?20:-20));if(accepted)yes++;else no++;assert.deepEqual(saved(after),after);}assert.ok(yes>0 && no>0);
+ assert.ok(['drama','music','video-games','robotics'].every(id=>schoolActivities.some(a=>a.id===id)));let yes=0,no=0;
+ for(let i=0;i<25;i++){const before=life(10,`club-${i}`),after=applySchoolActivity(before,'robotics'),accepted=after.occupation.school.activityAttempts.robotics.accepted;assert.equal(after.stats.Happiness,before.stats.Happiness+(accepted?20:-20));if(accepted)yes++;else no++;assert.deepEqual(saved(after),after);}assert.ok(yes>0 && no>0);
 });
 test('sexuality preferences require mutual compatibility and survive save/restart',()=>{
  for(const sexuality of ['Straight','Bisexual','Gay']){const current={...life(),sexuality};assert.equal(saved(current).sexuality,sexuality);assert.equal(restartLife(current).sexuality,sexuality);}

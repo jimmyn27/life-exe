@@ -8,7 +8,7 @@ import type { SocialPage } from './social';
 import { cityById, resolveCity, US_SNAPSHOT } from './catalogs/us/index.ts';
 
 export type Sexuality = 'Straight' | 'Bisexual' | 'Gay';
-export type Life = { sexuality?:Sexuality; id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; family?: Family; relationships?: Record<string, RelationshipRecord> };
+export type Life = { activityActions?:{age:number;ids:Array<'book'|'walk'>}; sexuality?:Sexuality; id: string; name: string; firstName?: string; lastName?: string; city: string; locationId?: string; catalogSnapshotId?: string; age: number; birthYear: number; balance: number; stats: Stats; log: Entry[]; social?: SocialPage; inbox?: LifeMail[]; pendingEvent?: PendingLifeEvent; occupation?: Occupation; family?: Family; relationships?: Record<string, RelationshipRecord> };
 export type SaveStore = { version: 1; activeId: string | null; lives: Life[] };
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 export const SAVE_KEY = 'life.exe.saves.v2';
@@ -17,11 +17,11 @@ export function clearPrototypeSaves(storage: Pick<Storage, 'removeItem'>): void 
   storage.removeItem('life.exe.saves.v1.backup');
 }
 export const emptyStore = (): SaveStore => ({ version: 1, activeId: null, lives: [] });
-const statNames = ['Health', 'Happiness', 'Intelligence', 'Appearance'] as const;
-const effectStatNames = [...statNames, 'Smarts', 'Looks', 'Athleticism'] as const;
+const statNames = ['Health', 'Happiness', 'Intelligence', 'Charisma'] as const;
+const effectStatNames = [...statNames, 'Appearance', 'Smarts', 'Looks', 'Athleticism'] as const;
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const validStat=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100;
-const validStatsBlock=(item:unknown)=>object(item)&&validStat(item.Health)&&validStat(item.Happiness)&&((validStat(item.Intelligence)&&validStat(item.Appearance))||(validStat(item.Smarts)&&validStat(item.Looks)));
+const validStatsBlock=(item:unknown)=>object(item)&&validStat(item.Health)&&validStat(item.Happiness)&&validStat(item.Intelligence??item.Smarts)&&validStat(item.Charisma??item.Appearance??item.Looks);
 function validEvent(value: unknown): value is LifeEvent {
   if (!object(value) || typeof value.title !== 'string' || typeof value.text !== 'string' || typeof value.category !== 'string' || value.icon !== undefined && typeof value.icon !== 'string' || !Array.isArray(value.choices) || !value.choices.length) return false;
   return value.choices.every(choice => object(choice) && ['label', 'hint', 'outcome'].every(key => typeof choice[key] === 'string') && (choice.jobDecision===undefined || object(choice.jobDecision) && typeof choice.jobDecision.id==='string') && (choice.friendshipDecision===undefined || object(choice.friendshipDecision) && typeof choice.friendshipDecision.id==='string' && choice.friendshipDecision.id.length>0 && typeof choice.friendshipDecision.salvage==='boolean') && (choice.familyEffect === undefined || object(choice.familyEffect) && Object.entries(choice.familyEffect).every(([key, effect]) => ['parents','siblings'].includes(key) && typeof effect === 'number' && Number.isFinite(effect) && Math.abs(effect) <= 100)) && (choice.schoolEffect === undefined || object(choice.schoolEffect) && Object.entries(choice.schoolEffect).every(([key, effect]) => ['grades','popularity'].includes(key) && typeof effect === 'number' && Number.isFinite(effect))) && (choice.effect === undefined || object(choice.effect) && Object.entries(choice.effect).every(([key, effect]) => effectStatNames.includes(key as typeof effectStatNames[number]) && typeof effect === 'number' && Number.isFinite(effect))));
@@ -34,6 +34,7 @@ function validLife(value: unknown): value is Life {
   if (value.firstName !== undefined && (typeof value.firstName !== 'string' || !value.firstName.trim() || typeof value.lastName !== 'string' || !value.lastName.trim() || value.name !== `${value.firstName} ${value.lastName}`)) return false;
   if (!Number.isInteger(value.age) || (value.age as number) < 0 || (value.age as number) > 1000 || !Number.isInteger(value.birthYear) || (value.birthYear as number) < 1 || (value.birthYear as number) > 8000 || typeof value.balance !== 'number' || !Number.isFinite(value.balance)) return false;
   if(value.sexuality!==undefined && !['Straight','Bisexual','Gay'].includes(value.sexuality as string))return false;
+  if(value.activityActions!==undefined && (!object(value.activityActions)||!Number.isInteger(value.activityActions.age)||(value.activityActions.age as number)<0||(value.activityActions.age as number)>(value.age as number)||!Array.isArray(value.activityActions.ids)||!value.activityActions.ids.every(id=>['book','walk'].includes(id as string))||new Set(value.activityActions.ids).size!==value.activityActions.ids.length))return false;
   const stats = value.stats;
   if (value.family !== undefined) {
     const family = value.family;
@@ -85,7 +86,7 @@ function validLife(value: unknown): value is Life {
     const school = occupation.school;
     if(occupation.droppedOut!==undefined && typeof occupation.droppedOut!=='boolean')return false;
     if(object(occupation.school) && (occupation.school.transfers!==undefined && (!Number.isInteger(occupation.school.transfers) || (occupation.school.transfers as number)<0) || occupation.school.danceAskedIds!==undefined && (!Array.isArray(occupation.school.danceAskedIds) || !occupation.school.danceAskedIds.every(id=>typeof id==='string'))))return false;
-    const activityIds:string[]=schoolActivities.map(activity=>activity.id);
+    const activityIds:string[]=[...schoolActivities.map(activity=>activity.id),...['cooking','foreign-language','photography','history','honor-society','yearbook','environmental','badminton','diving','golf','lacrosse','rugby']];
     if(object(school)) {
       if(school.activityDetails!==undefined && (!object(school.activityDetails) || !Object.entries(school.activityDetails).every(([id,detail])=>activityIds.includes(id) && Array.isArray(school.memberships) && school.memberships.includes(id) && object(detail) && percentage(detail.performance) && startAge(detail.joinAge) && Number.isInteger(detail.years) && detail.years===(value.age as number)-(detail.joinAge as number) && [0,1,2].includes(detail.rank as number) && Number.isInteger(detail.hours) && (detail.hours as number)>=1 && (detail.hours as number)<=10 && (detail.trainedAge===undefined || startAge(detail.trainedAge)))))return false;
       if(Array.isArray(school.roster) && school.roster.some(person=>object(person) && (person.grades!==undefined && !percentage(person.grades) || person.gradeAge!==undefined && !startAge(person.gradeAge) || ['clubs','sports'].some(key=>person[key]!==undefined && (!Array.isArray(person[key]) || !(person[key] as unknown[]).every(id=>activityIds.includes(id as string)))))))return false;
@@ -119,9 +120,9 @@ export function parseStore(raw: string | null): SaveStore {
   return value as SaveStore;
 }
 export function loadStore(storage: StorageLike): SaveStore { const store = parseStore(storage.getItem(SAVE_KEY)); return { ...store, lives: store.lives.map(life => {
-  const normalizeStats=(stats:Stats):Stats=>{const raw=stats as unknown as Record<string,number>;return {Health:raw.Health,Happiness:raw.Happiness,Intelligence:raw.Intelligence??raw.Smarts??50,Appearance:raw.Appearance??raw.Looks??50};};
+  const normalizeStats=(stats:Stats):Stats=>{const raw=stats as unknown as Record<string,number>;return {Health:raw.Health,Happiness:raw.Happiness,Intelligence:raw.Intelligence??raw.Smarts??50,Charisma:raw.Charisma??raw.Appearance??raw.Looks??50};};
   let upgraded:Life={...life,stats:normalizeStats(life.stats),...(life.family?{family:{...life.family,birthStats:normalizeStats(life.family.birthStats),parents:life.family.parents.map(parent=>({...parent,stats:normalizeStats(parent.stats)})),siblings:life.family.siblings?.map(sibling=>({...sibling,stats:normalizeStats(sibling.stats)})),...(life.family.origin?{origin:{...life.family.origin,parents:life.family.origin.parents.map(parent=>({...parent,stats:normalizeStats(parent.stats)})),siblings:life.family.origin.siblings.map(sibling=>({...sibling,stats:normalizeStats(sibling.stats)}))}}:{})}}:{}),...(life.relationships?{relationships:Object.fromEntries(Object.entries(life.relationships).map(([id,record])=>[id,{...record,stats:normalizeStats(record.stats)}]))}:{})};
-  if(upgraded.occupation?.school?.roster)upgraded={...upgraded,occupation:{...upgraded.occupation,school:{...upgraded.occupation.school,roster:upgraded.occupation.school.roster.map(p=>({...p,...(p.clubs?{clubs:p.clubs.slice(0,1)}:{}),...(p.sports?{sports:p.sports.slice(0,1)}:{})}))}}};
+  if(upgraded.occupation?.school?.roster)upgraded={...upgraded,occupation:{...upgraded.occupation,school:{...upgraded.occupation.school,roster:upgraded.occupation.school.roster.map(p=>({...p,...(p.clubs?{clubs:p.clubs.filter(id=>schoolActivities.some(a=>a.id===id)).slice(0,1)}:{}),...(p.sports?{sports:p.sports.filter(id=>schoolActivities.some(a=>a.id===id)).slice(0,1)}:{})})),memberships:upgraded.occupation.school.memberships?.filter(id=>schoolActivities.some(a=>a.id===id)),activityDetails:Object.fromEntries(Object.entries(upgraded.occupation.school.activityDetails??{}).filter(([id])=>schoolActivities.some(a=>a.id===id))),activityAttempts:Object.fromEntries(Object.entries(upgraded.occupation.school.activityAttempts??{}).filter(([id])=>schoolActivities.some(a=>a.id===id)))}}};
   if (life.firstName === undefined) {
     const [firstName, ...rest] = life.name.trim().split(/\s+/);
     if (rest.length) upgraded = { ...upgraded, firstName, lastName: rest.join(' ') };
@@ -163,6 +164,6 @@ export function persistStore(storage: StorageLike, store: SaveStore): void {
 }
 export function restartLife(life: Life): Life {
   const family = life.family ? resetFamily(life.family) : undefined;
-  return { ...life, family, age: 0, balance: 0, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: life.family ? { ...life.family.birthStats } : { Health: 94, Happiness: 82, Intelligence: 76, Appearance: 68 }, log: [{ age: 0, tag: 'LIFE', text: birthIntroduction(life.name, life.city, family) }] };
+  return { ...life, family, age: 0, balance: 0, activityActions:undefined, social: undefined, inbox: undefined, pendingEvent: undefined, occupation: undefined, relationships: undefined, stats: life.family ? { ...life.family.birthStats } : { Health: 94, Happiness: 82, Intelligence: 76, Charisma: 68 }, log: [{ age: 0, tag: 'LIFE', text: birthIntroduction(life.name, life.city, family) }] };
 }
 export function lifeDate(life: Life): string { return `01/01/${life.birthYear + life.age}`; }

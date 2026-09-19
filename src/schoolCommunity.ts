@@ -1,11 +1,11 @@
-import {initialRelationship} from './relationshipModel.ts';
+import {initialRelationship,initialStaffRelationship} from './relationshipModel.ts';
 import {advanceClassmate} from './npcSchool.ts';
 import {seededRandom} from './family.ts';
 import {namePool,givenNamesForGender} from './catalogs/us/lifeContent.ts';
 export type SchoolPerson={id:string;name:string;gender:'Male'|'Female';ageOffset:number;relation:'Classmate'|'Teacher'|'Principal'|'Professor';group:string;strength:number;subject?:string;grades?:number;gradeAge?:number;clubs?:string[];sports?:string[]};
 export const schoolStageId=(age:number)=>age<10?'primary':age<14?'middle':age<18?'secondary':'university';
 export const classroomSize=(age:number)=>age<10?22:age<14?24:25;
-export function advanceSchoolRoster(id:string,age:number,previous:readonly SchoolPerson[]=[],appearance=50):SchoolPerson[]{
+export function advanceSchoolRoster(id:string,age:number,previous:readonly SchoolPerson[]=[],charisma=50,intelligence=50):SchoolPerson[]{
  const stage=schoolStageId(age),transition=age===10 || age===14;
  const random=seededRandom(`${id}:roster:${age}`);
  const integer=(a:number,b:number)=>a+Math.floor(random()*(b-a+1));
@@ -16,7 +16,7 @@ export function advanceSchoolRoster(id:string,age:number,previous:readonly Schoo
   let name='';
   do {name=`${givenNames[integer(0,givenNames.length-1)]} ${namePool.surnames[integer(0,namePool.surnames.length-1)]}`;}while(used.has(name));
   used.add(name);
-  return {id:`school-${stage}-${age}-${relation}-${index}`,name,gender,ageOffset:relation==='Classmate'?0:relation==='Principal'?integer(30,45):integer(20,38),relation,group:relation==='Classmate'?'Classmates':'Staff',strength:relation==='Classmate'?initialRelationship(id,`school-${stage}-${age}-${relation}-${index}`,appearance):integer(40,75),...(subject?{subject}:{})};
+  return {id:`school-${stage}-${age}-${relation}-${index}`,name,gender,ageOffset:relation==='Classmate'?0:relation==='Principal'?integer(30,45):integer(20,38),relation,group:relation==='Classmate'?'Classmates':'Staff',strength:relation==='Classmate'?initialRelationship(id,`school-${stage}-${age}-${relation}-${index}`,charisma):initialStaffRelationship(id,`school-${stage}-${age}-${relation}-${index}`,intelligence,charisma),...(subject?{subject}:{})};
  };
  let peers=previous.filter(person=>person.relation==='Classmate');
  const staffChanged=transition || !previous.length;
@@ -32,8 +32,8 @@ export function advanceSchoolRoster(id:string,age:number,previous:readonly Schoo
  const staff=staffChanged?[make(0,'Principal'),...subjects.map((subject,index)=>make(index+1,stage==='university'?'Professor':'Teacher',subject))]:previous.filter(person=>person.relation!=='Classmate');
  return [...peers.map(person=>advanceClassmate(person,id,age,transition)),...staff];
 }
-export function initialSchoolRoster(id:string,age:number,appearance=50):SchoolPerson[]{
+export function initialSchoolRoster(id:string,age:number,charisma=50,intelligence=50):SchoolPerson[]{
  let roster:SchoolPerson[]=[];
- for(let year=6;year<=Math.min(age,17);year++)roster=advanceSchoolRoster(id,year,roster,appearance);
- return age>=18?advanceSchoolRoster(id,age,[],appearance):roster;
+ for(let year=6;year<=Math.min(age,17);year++)roster=advanceSchoolRoster(id,year,roster,charisma,intelligence);
+ return age>=18?advanceSchoolRoster(id,age,[],charisma,intelligence):roster;
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSocialPage, postSocialUpdate } from '../src/social.ts';
 import { emptyStore, upsertLife, parseStore, restartLife } from '../src/saves.ts';
 
-const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Intelligence: 76, Appearance: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born.' }] });
+const life = (id = 'alex') => ({ id, name: id, city: 'Toronto', age: 18, birthYear: 2000, balance: 2450, stats: { Health: 94, Happiness: 82, Intelligence: 76, Charisma: 68 }, log: [{ age: 0, tag: 'LIFE', text: 'Born.' }] });
 
 test('old saves load without a social page and posting requires creating one', () => {
   const original = life();

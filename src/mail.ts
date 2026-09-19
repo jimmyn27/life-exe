@@ -12,6 +12,7 @@ import { eventForAge } from './lifeEvents.ts';
 export type LifeMail = { id: string; age: number; sender: string; read: boolean; archived?: boolean; event: LifeEvent; decision?: number };
 export type PendingLifeEvent = { age: number; event: LifeEvent; queue?: LifeEvent[] };
 export const hasRequiredDecisions = (life: Life) => Boolean(life.pendingEvent || life.inbox?.some(mail => mail.decision === undefined));
+const applyStatEffect=(stats:Life['stats'],effect:Record<string,number>|undefined)=>{for(const [rawKey,delta] of Object.entries(effect??{})){const key=(rawKey==='Appearance'||rawKey==='Looks'?'Charisma':rawKey==='Smarts'?'Intelligence':rawKey==='Athleticism'?'Health':rawKey) as keyof Life['stats'];stats[key]=Math.max(0,Math.min(100,(stats[key]??0)+delta));}};
 export function mailForAge(age: number): { sender: string; event: LifeEvent }[] {
   if (age === 19) return [{ sender: 'Northbridge University · Admissions', event: { category: 'University acceptance', title: 'Your university acceptance', text: 'Congratulations! Northbridge University has offered you a place on its undergraduate program. Please respond to your offer.', choices: [
     { label: 'Accept the place', hint: 'Begin a new chapter in education.', outcome: 'I accepted my place at Northbridge University.', effect: { Intelligence: 3, Happiness: 3 } },
@@ -28,7 +29,7 @@ export function advanceYear(life: Life, deliverMail = false): Life {
   life=initializeWorkRelationships(life);
   const age = life.age + 1;
   const random=seededRandom(`${life.id}:${age}:yearly-stats`);
-  const delta=()=>Math.floor(random()*3)-1; const yearlyStats={...life.stats,Health:Math.max(0,Math.min(100,life.stats.Health+delta())),Happiness:Math.max(0,Math.min(100,life.stats.Happiness+delta())),Intelligence:Math.max(0,Math.min(100,life.stats.Intelligence+delta())),Appearance:Math.max(0,Math.min(100,life.stats.Appearance+delta()))};
+  const delta=()=>Math.floor(random()*3)-1; const yearlyStats={...life.stats,Health:Math.max(0,Math.min(100,life.stats.Health+delta())),Happiness:Math.max(0,Math.min(100,life.stats.Happiness+delta())),Intelligence:Math.max(0,Math.min(100,life.stats.Intelligence+delta())),Charisma:Math.max(0,Math.min(100,life.stats.Charisma+delta()))};
   const pay=yearlyPartTimePay(occupationJobs(getOccupation(life)));
   const event: LifeEvent = age === 18 && !getOccupation(life).droppedOut ? { category: 'Education', title: 'Congratulations, graduate!', text: 'You have graduated from high school. A whole new chapter is ahead. How would you like to celebrate?', choices: [
     { label: 'Celebrate with friends', hint: 'Share this moment.', outcome: 'I graduated from high school. I celebrated with my friends.', effect: { Happiness: 4 } },
@@ -45,7 +46,7 @@ export function answerLifeEvent(life: Life, decision: number): Life {
   const choice = pending.event.choices[decision];
   if(choice.friendshipDecision){const resolved=resolveFriendship(life,choice.friendshipDecision.id,choice.friendshipDecision.salvage);if(resolved.occupation?.school)resolved.occupation={...resolved.occupation,school:{...resolved.occupation.school,popularity:schoolPopularity(resolved,resolved.occupation.school)}};const next=resolved.pendingEvent?.queue;return {...resolved,pendingEvent:next?.length?{age:pending.age,event:next[0],...(next.length>1?{queue:next.slice(1)}:{})}:undefined};}
   const stats = { ...life.stats };
-  for (const key of Object.keys(choice.effect ?? {}) as (keyof typeof stats)[]) stats[key] = Math.max(0, Math.min(100, (stats[key] ?? 0) + (choice.effect?.[key] ?? 0)));
+  applyStatEffect(stats,choice.effect as Record<string,number>|undefined);
   const relationships={...life.relationships};
   if(choice.familyEffect && life.family){
     const apply=(member:{id:string;stats:import('./data').Stats},delta:number|undefined)=>{if(!delta)return;const old=relationships[member.id];relationships[member.id]={...old,strength:Math.max(0,Math.min(100,(old?.strength??100)+delta)),status:old?.status??'friend',friendship:old?.friendship??true,stats:old?.stats??member.stats};};
@@ -73,7 +74,7 @@ export function answerMail(life: Life, id: string, decision: number): Life {
   if (!mail || mail.decision !== undefined || !Number.isInteger(decision) || !mail.event.choices[decision]) return life;
   const choice = mail.event.choices[decision];
   const stats = { ...life.stats };
-  for (const key of Object.keys(choice.effect ?? {}) as (keyof typeof stats)[]) stats[key] = Math.max(0, Math.min(100, (stats[key] ?? 0) + (choice.effect?.[key] ?? 0)));
+  applyStatEffect(stats,choice.effect as Record<string,number>|undefined);
   const occupation = { ...getOccupation(life) };
   if (decision === 0 && mail.event.category === 'University acceptance') occupation.school = university(life.age);
   if (decision === 0 && mail.event.category === 'Job offer') Object.assign(occupation,withOccupationJobs(occupation,[...occupationJobs(occupation),libraryJob(life.age)]));

@@ -7,7 +7,7 @@ import {newMembership,membershipInfo,scheduleHours,scheduleBreakdown,advanceComm
 import {advanceClassmate,npcBaseStats,classmatePopularity} from '../src/npcSchool.ts';
 import {advanceYear} from '../src/mail.ts';
 import {parseStore,upsertLife,emptyStore} from '../src/saves.ts';
-const life=(age=14,id='commitments')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:70,Happiness:60,Intelligence:60,Appearance:60},log:[]});
+const life=(age=14,id='commitments')=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:100,stats:{Health:70,Happiness:60,Intelligence:60,Charisma:60},log:[]});
 const enrolled=(ids=['basketball'],age=14,id='commitments')=>{const current=life(age,id),occupation=getOccupation(current);return {...current,occupation:{...occupation,school:{...occupation.school,memberships:ids,activityDetails:Object.fromEntries(ids.map(id=>[id,newMembership(age)]))}}};};
 const saved=current=>parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
 test('accepted memberships start at fifty performance, first rank, zero years and five hours',()=>{

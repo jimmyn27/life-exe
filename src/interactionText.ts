@@ -18,5 +18,5 @@ export const interactionHints:Record<RelationshipAction,string>={
  Flirt:'Flirt with PRONOUN.',Gift:'Give PRONOUN a gift.',Insult:'Insult PRONOUN.',
  'Have fun':'Have fun with PRONOUN.','Hook up':'Hook up with PRONOUN.','Make love':'Make love to PRONOUN.',
  'Spend time':'Spend time with PRONOUN.',Unfriend:'Unfriend PRONOUN.','Act up':'Misbehave around PRONOUN.',
- Disrespect:'Challenge their authority.','Suck up':'Try to win their approval.',
+ Disrespect:'Challenge PRONOUN authority.','Suck up':'Try to win PRONOUN approval.',
 };

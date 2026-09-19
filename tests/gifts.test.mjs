@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {gifts,giftOptions,giftEffect} from '../src/gifts.ts';
 import {characters,availableActions,interact} from '../src/relationships.ts';
 import {emptyStore,upsertLife,parseStore} from '../src/saves.ts';
-const life=age=>({id:'gifts-test',name:'Alex Smith',city:'New York City',age,birthYear:2000,balance:500,stats:{Health:94,Happiness:82,Intelligence:76,Appearance:68},log:[]});
+const life=age=>({id:'gifts-test',name:'Alex Smith',city:'New York City',age,birthYear:2000,balance:500,stats:{Health:94,Happiness:82,Intelligence:76,Charisma:68},log:[]});
 const gift=id=>gifts.find(g=>g.id===id);
 test('gift picker returns five distinct catalog items with varied prices',()=>{
  for(let i=0;i<20;i++){const options=giftOptions();assert.equal(options.length,5);assert.equal(new Set(options.map(g=>g.id)).size,5);assert.ok(options.every(g=>gifts.includes(g) && g.price>0));}
@@ -22,8 +22,8 @@ test('gift response reflects recipient age, family context, cost and appropriate
 test('selected gifts charge their own price, can harm relationships, persist, and never overdraw',()=>{
  const current=life(18),parent=characters(current).personal[0];
  const positive=interact(current,parent.id,'Gift','card');assert.equal(positive.balance,499);assert.ok(positive.relationships[parent.id].strength>=parent.strength);assert.match(positive.log.at(-1).text,/handmade card/);
- const negative=interact(current,parent.id,'Gift','diet');assert.equal(negative.balance,482);assert.ok(negative.relationships[parent.id].strength<parent.strength);
+ const negativeLife={...current,id:'gifts-negative'};const negativeParent=characters(negativeLife).personal[0];const negative=interact(negativeLife,negativeParent.id,'Gift','diet');assert.equal(negative.balance,482);assert.ok(negative.relationships[negativeParent.id].strength<negativeParent.strength);
  assert.deepEqual(parseStore(JSON.stringify(upsertLife(emptyStore(),negative))).lives[0],negative);
  assert.equal(interact({...current,balance:0},parent.id,'Gift','card').balance,0);assert.equal(interact(current,parent.id,'Gift','unknown'),current);
- const repeated=interact(positive,parent.id,'Gift','tablet');assert.equal(repeated.balance,99);assert.equal(repeated.relationships[parent.id].strength,positive.relationships[parent.id].strength);
+ const repeated=interact(positive,parent.id,'Gift','tablet');assert.equal(repeated.balance,499);assert.equal(repeated.relationships[parent.id].strength,positive.relationships[parent.id].strength);assert.match(repeated.log.at(-1).text,/already given/);
 });

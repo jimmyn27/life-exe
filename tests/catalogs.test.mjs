@@ -28,7 +28,7 @@ test('community college awards open appropriate ranks without bypassing advanced
   assert.equal(meetsPositionEducation('office-1',[{credentialId:'ged'}]),true);
   assert.throws(()=>meetsPositionEducation('unknown',[]));
 });
-const life = city => ({ id:'us-test',name:'Jamie Morgan',firstName:'Jamie',lastName:'Morgan',city:city.name,locationId:city.id,catalogSnapshotId:US_SNAPSHOT.id,age:18,birthYear:2000,balance:500,stats:{Health:90,Happiness:80,Intelligence:70,Appearance:60},log:[] });
+const life = city => ({ id:'us-test',name:'Jamie Morgan',firstName:'Jamie',lastName:'Morgan',city:city.name,locationId:city.id,catalogSnapshotId:US_SNAPSHOT.id,age:18,birthYear:2000,balance:500,stats:{Health:90,Happiness:80,Intelligence:70,Charisma:60},log:[] });
 const storage = () => { const entries=new Map(); return { getItem:key=>entries.get(key)??null,setItem:(key,value)=>entries.set(key,value) }; };
 
 test('50 largest Census places have unique city labels, stable GEOIDs and valid hidden states', () => {

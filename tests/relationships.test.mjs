@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { characters, availableActions, interact, relationshipActions } from '../src/relationships.ts';
 import { parseStore, upsertLife, emptyStore, restartLife } from '../src/saves.ts';
-const life = age => ({id:'social-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Intelligence:76,Appearance:68},log:[]});
+const life = age => ({id:'social-test',name:'Alex',city:'Toronto',age,birthYear:2000,balance:100,stats:{Health:94,Happiness:82,Intelligence:76,Charisma:68},log:[]});
 test('profiles have player stats, age with the player, and correct parent action restrictions', () => {
   const groups = characters(life(18)); const parent = groups.personal[0]; const maya = groups.personal.find(person => person.id === 'maya-chen');
-  assert.deepEqual(Object.keys(parent.stats),['Health','Happiness','Intelligence','Appearance']); assert.equal(parent.age,46);
+  assert.deepEqual(Object.keys(parent.stats),['Health','Happiness','Intelligence','Charisma']); assert.equal(parent.age,46);
   assert.equal(characters(life(19)).personal[0].age,47);
   assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
   assert.deepEqual(availableActions(maya),relationshipActions.filter(action=>!['Ask for money','Befriend','Act up','Disrespect','Suck up','Make love','Break up'].includes(action)));

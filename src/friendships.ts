@@ -1,19 +1,18 @@
 import {seededRandom} from './family.ts';
-import {characters} from './relationships.ts';
 import type {Life} from './saves';
 import type {LifeEvent} from './data';
 export const friendshipDecay=5;
 export const friendshipLossChance=(strength:number)=>strength>=50?0:Math.min(.9,(50-strength)/60);
 export function advanceFriendships(life:Life):{life:Life;events:LifeEvent[]}{
- const relationships={...life.relationships},events:LifeEvent[]=[],decayed=new Set<string>();
- const groups=characters(life);
- for(const person of [...groups.school,...groups.work].filter(person=>person.relation==='Classmate'||person.relation==='Coworker')){
-  const record=relationships[person.id],strength=Math.max(0,(record?.strength??person.strength)-friendshipDecay);
-  relationships[person.id]={...record,strength,status:record?.status??'acquaintance',stats:record?.stats??person.stats,profile:record?.profile};decayed.add(person.id);
+ const relationships={...life.relationships},events:LifeEvent[]=[];
+ if(life.age>18)for(const parent of life.family?.parents??[]){const record=relationships[parent.id];relationships[parent.id]={...record,strength:Math.max(0,(record?.strength??100)-friendshipDecay),status:record?.status??'friend',friendship:true,stats:record?.stats??parent.stats};}
+ for(const sibling of life.family?.siblings??[]){
+  const record=relationships[sibling.id];
+  relationships[sibling.id]={...record,strength:Math.max(0,(record?.strength??100)-friendshipDecay),status:record?.status??'friend',friendship:true,stats:record?.stats??sibling.stats};
  }
  for(const [id,record] of Object.entries(relationships)){
   if(!record.profile||!(record.status==='dating'||record.friendship||record.status==='friend'))continue;
-  const strength=decayed.has(id)?record.strength:Math.max(0,record.strength-friendshipDecay);relationships[id]={...record,strength};
+  const strength=Math.max(0,record.strength-friendshipDecay);relationships[id]={...record,strength};
   if(record.status!=='dating'&&seededRandom(`${life.id}:${id}:friendship-loss:${life.age}`)()<friendshipLossChance(strength))events.push({category:'Friendship',title:'A friendship is drifting apart',text:`${record.profile.name} no longer feels close to you and is considering ending your friendship.`,choices:[{label:'Try to salvage the friendship',hint:'Try to reconnect.',outcome:'',friendshipDecision:{id,salvage:true}},{label:'Wish them well',hint:'Let the friendship end kindly.',outcome:'',friendshipDecision:{id,salvage:false}}]});
  }
  return {life:{...life,relationships},events};

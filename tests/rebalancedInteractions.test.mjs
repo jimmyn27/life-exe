@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {characters,interact,declineInvitation} from '../src/relationships.ts';
 import {reaction,interactionResult} from '../src/interactionResults.ts';
-const life=(id='balance',age=18)=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:1000,sexuality:'Bisexual',stats:{Health:80,Happiness:80,Intelligence:80,Appearance:80},log:[]});
+const life=(id='balance',age=18)=>({id,name:'Sam Smith',city:'New York City',age,birthYear:2000,balance:1000,sexuality:'Bisexual',stats:{Health:80,Happiness:80,Intelligence:80,Charisma:80},log:[]});
 test('continuous social scales change both participants exactly and first-limited actions do not reapply',()=>{
  for(const action of ['Compliment','Conversation','Flirt']){const before=life(`scale-${action}`),person=characters(before).personal.find(p=>p.id==='maya-chen'),response=reaction(before,person,action),after=interact(before,person.id,action);assert.ok(Number.isInteger(response.delta));assert.ok(response.delta>=(action==='Compliment'?0:action==='Conversation'?-5:-10));assert.ok(response.delta<=(action==='Compliment'?25:action==='Conversation'?10:25));assert.equal(after.relationships[person.id].strength,Math.min(100,person.strength+response.delta));assert.equal(after.stats.Happiness,Math.max(0,Math.min(100,before.stats.Happiness+(action==='Compliment'?0:response.delta))));assert.equal(after.relationships[person.id].stats.Happiness,Math.max(0,Math.min(100,person.stats.Happiness+response.delta)));const repeat=interact(after,person.id,action);assert.equal(repeat.relationships[person.id].strength,after.relationships[person.id].strength);}
 });

@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { advanceYear, answerMail, answerLifeEvent, hasRequiredDecisions, setMailRead, archiveMail } from '../src/mail.ts';
 import { parseStore, emptyStore, upsertLife, restartLife } from '../src/saves.ts';
-const life = (age = 17) => ({ id:'mail-test', name:'Alex', city:'Toronto', age, birthYear:2000, balance:0, stats:{Health:94,Happiness:99,Intelligence:76,Appearance:68}, log:[] });
+const life = (age = 17) => ({ id:'mail-test', name:'Alex', city:'Toronto', age, birthYear:2000, balance:0, stats:{Health:94,Happiness:99,Intelligence:76,Charisma:68}, log:[] });
 const restore = current => parseStore(JSON.stringify(upsertLife(emptyStore(),current))).lives[0];
 
 test('graduation is a required yearly popup, never an email', () => {
   const old = life(); const next = advanceYear(old, true);
   assert.equal(next.age,18); assert.equal(next.inbox.length,0);
   assert.match(next.pendingEvent.event.title,/graduate/);
-  for(const key of ['Health','Happiness','Intelligence','Appearance'])assert.ok(Math.abs(next.stats[key]-old.stats[key])<=1); assert.deepEqual(next.log,[]);
+  for(const key of ['Health','Happiness','Intelligence','Charisma'])assert.ok(Math.abs(next.stats[key]-old.stats[key])<=1); assert.deepEqual(next.log,[]);
   assert.equal(old.pendingEvent,undefined); assert.equal(advanceYear(next, true),next);
   const answered = answerLifeEvent(next,0);
   assert.equal(answered.age,18); assert.equal(answered.stats.Happiness,100);
