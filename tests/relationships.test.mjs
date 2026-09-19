@@ -9,7 +9,7 @@ test('profiles have player stats, age with the player, and correct parent action
   assert.equal(characters(life(19)).personal[0].age,47);
   assert.deepEqual(availableActions(parent),['Ask for money','Compliment','Conversation','Gift','Insult','Spend time']);
   assert.deepEqual(availableActions(maya),relationshipActions.filter(action=>!['Ask for money','Befriend','Act up','Disrespect','Suck up','Make love','Break up'].includes(action)));
-  for (const action of ['Ask out','Have fun','Unfriend']) { const current=life(18); assert.equal(interact(current,parent.id,action),current); }
+  for (const action of ['Ask out','Unfriend']) { const current=life(18); assert.equal(interact(current,parent.id,action),current); }
 });
 test('interactions change relationships, gifting charges money once per action, and failed gifting is a no-op', () => {
   const current = life(18); const compliment = interact(current,'maya-chen','Compliment');

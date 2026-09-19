@@ -33,13 +33,13 @@ test('natural yearly performance gains apply to work, clubs and sports, and posi
 });
 test('partners get breakup first, no flirt/befriend/unfriend; acquaintances need friendship to spend time, and age-specific outings are enforced',()=>{
  const l=life(),p=characters(l).school.find(p=>p.relation==='Classmate');assert.ok(!availableActions(p,l).includes('Spend time'));const befriended=interact(l,p.id,'Befriend');assert.ok(availableActions(characters(befriended).school.find(q=>q.id===p.id),befriended).includes('Spend time'));
- const record=befriended.relationships[p.id],dating={...befriended,relationships:{...befriended.relationships,[p.id]:{...record,status:'dating'}}},partner=characters(dating).personal.find(q=>q.id===p.id);assert.equal(availableActions(partner,dating)[0],'Break up');for(const a of ['Flirt','Befriend','Unfriend'])assert.ok(actionUnavailable(dating,partner,a));assert.ok(actionUnavailable(dating,partner,'Hook up'));assert.equal(actionUnavailable(dating,partner,'Have fun'),null);
+ const record=befriended.relationships[p.id],dating={...befriended,relationships:{...befriended.relationships,[p.id]:{...record,status:'dating'}}},partner=characters(dating).personal.find(q=>q.id===p.id);assert.equal(availableActions(partner,dating)[0],'Break up');for(const a of ['Flirt','Befriend','Unfriend'])assert.ok(actionUnavailable(dating,partner,a));assert.ok(actionUnavailable(dating,partner,'Hook up'));
  const ended=interact(dating,p.id,'Break up');assert.equal(ended.relationships[p.id].status,'friend');saved(ended);
 });
 test('only specified social actions have confirmations; character previews and Nevermind are present on friend/dating/outings prompts',()=>{
  const l=life(),p=characters(l).school.find(p=>p.relation==='Classmate');for(const a of ['Conversation','Compliment'])assert.equal(interactionConfirmation(l,p,a),null);
- for(const a of ['Befriend','Ask out','Have fun']){const e=interactionConfirmation(l,p,a);assert.equal(e.profileId,p.id);assert.equal(e.choices.at(-1).label,'Nevermind');}assert.ok(interactionConfirmation(l,p,'Insult').text.includes(`classmate (${p.name.split(' ')[0]})`));assert.equal(interactionConfirmation(l,p,'Hook up'),null);
- assert.match(interactionConfirmation(l,p,'Have fun').choices[0].label,/Try to have fun with (him|her)/);assert.equal(nextSchoolName(l,getOccupation(l).school),'Pinecrest High school');
+ for(const a of ['Befriend','Ask out']){const e=interactionConfirmation(l,p,a);assert.equal(e.profileId,p.id);assert.equal(e.choices.at(-1).label,'Nevermind');}assert.ok(interactionConfirmation(l,p,'Insult').text.includes(`classmate (${p.name.split(' ')[0]})`));assert.equal(interactionConfirmation(l,p,'Hook up'),null);
+ assert.equal(nextSchoolName(l,getOccupation(l).school),'Pinecrest High school');
 });
 test('dancing with an existing partner always succeeds and has both enjoyment bars',()=>{
  for(let i=0;i<30;i++){const l=life(16,`partner-dance-${i}`),p=characters(l).school.find(p=>p.relation==='Classmate');const dating=interact(l,p.id,'Befriend');dating.relationships[p.id].status='dating';dating.relationships[p.id].strength=0;const outcome=schoolDance(dating,'partner');assert.equal(outcome.accepted,true);assert.equal(outcome.bars.length,2);assert.ok(outcome.text.includes(p.name));assert.ok(outcome.life.occupation.school.yearActions.includes('School dance'));}

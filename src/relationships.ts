@@ -10,7 +10,7 @@ import type { Life } from './saves';
 import type { Stats } from './data';
 import { getOccupation, occupationJobs, withOccupationJobs, schoolPopularity, occupationContacts, schoolName, type Contact } from './occupation.ts';
 
-export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Have fun', 'Hook up', 'Insult', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
+export const relationshipActions = ['Break up', 'Befriend', 'Ask for money', 'Ask out', 'Compliment', 'Conversation', 'Flirt', 'Gift', 'Hook up', 'Insult', 'Make love', 'Spend time', 'Unfriend', 'Act up', 'Disrespect', 'Suck up'] as const;
 export type RelationshipAction = typeof relationshipActions[number];
 export type RelationshipRecord = { strength: number; status: 'acquaintance' | 'friend' | 'dating' | 'unfriended'; stats: Stats; friendship?: boolean; profile?: {name:string;gender:string;ageOffset:number;education:string;occupation:string}; usedAge?: number; usedActions?: RelationshipAction[]; moneyAcceptedAge?:number; successfulAge?:number; successfulActions?:RelationshipAction[] };
 export type Person = Contact & { grades?:number;popularity?:number;extracurriculars?:string[];sexuality:import('./saves').Sexuality; id: string; gender: string; age: number; education: string; occupation: string; stats: Stats; parent: boolean; friendship: boolean; family: boolean; status: RelationshipRecord['status'] };
@@ -54,7 +54,6 @@ export function actionUnavailable(life: Life, person: Person, action: Relationsh
   if (!availableActions(person,life).includes(action)) return 'This action is not available with this person.';
   if(action==='Ask out'&&(life.age<12||person.age<12||(life.age<18)!==(person.age<18)))return 'Dating is available from age 12, between peers or between adults.';
   if(action==='Flirt'&&(life.age<10||person.age<10||(life.age<18)!==(person.age<18)))return 'Flirting is available from age 10, between peers or between adults.';
-  if(action==='Have fun' && (life.age<16 || person.age<16 || life.age>=18 || person.age>=18))return 'Nonsexual outings are available for peers aged 16–17.';
   if (['Hook up','Make love'].includes(action) && (life.age < 18 || person.age < 18)) return 'Available when both characters are adults (18+).';
   if (action === 'Ask out' && person.status === 'dating') return 'You are already dating.';
   if (action === 'Ask out' && Object.entries(life.relationships ?? {}).some(([id, record]) => id !== person.id && record.status === 'dating')) return 'You are already in a relationship.';
@@ -79,9 +78,9 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
   const amount=given ? Math.max(1,Math.round((2+wealth*1.8)*(.5+random()*.5))) : 0;
   const response=reaction(life,person,action,giftId);
   const romance=romanceOutcome(life,person,action);
-  const accepted=invited && ['Ask out','Have fun'].includes(action)?true:action==='Befriend'?random()<person.strength/100:['Have fun','Hook up','Make love'].includes(action)?romance.accepted:person.strength>=65 && (action!=='Ask out'||romance.compatible);
+  const accepted=invited && action==='Ask out'?true:action==='Befriend'?random()<person.strength/100:['Hook up','Make love'].includes(action)?romance.accepted:person.strength>=65 && (action!=='Ask out'||romance.compatible);
   const intimacyGain=Math.round(romance.theirEnjoyment/5);
-  const deltas: Record<RelationshipAction,number> = {'Break up':-50,'Hook up':accepted?intimacyGain:-20,'Act up':-25,Disrespect:-50,'Suck up':response.delta,Befriend:accepted?25:-25,Flirt:response.delta,'Ask for money':given?0:-10,'Ask out':accepted?25:-10,Compliment:response.delta,Conversation:response.delta,Gift:response.delta,'Have fun':accepted?intimacyGain:-20,'Make love':accepted?intimacyGain:-20,Insult:-20,'Spend time':10,Unfriend:0};
+  const deltas: Record<RelationshipAction,number> = {'Break up':-50,'Hook up':accepted?intimacyGain:-20,'Act up':-25,Disrespect:-50,'Suck up':response.delta,Befriend:accepted?25:-25,Flirt:response.delta,'Ask for money':given?0:-10,'Ask out':accepted?25:-10,Compliment:response.delta,Conversation:response.delta,Gift:response.delta,'Make love':accepted?intimacyGain:-20,Insult:-20,'Spend time':10,Unfriend:0};
   const subject=person.gender==='Female'?'she':'he',capital=person.gender==='Female'?'She':'He';
   const spendActivities=['watched a movie together','played a board game','walked through the park','shared a meal','visited a museum','went shopping','played video games','listened to music','cooked something together','went for ice cream','worked on a puzzle','visited a local festival','had a picnic','went bowling','explored a new neighborhood','looked through old photos','made crafts together','watched a sports game','went to a café','spent a quiet afternoon talking'];
   const spendActivity=spendActivities[Math.floor(seededRandom(`${life.id}:${id}:${life.age}:${life.log.length}:spend-time`)()*spendActivities.length)];
@@ -97,16 +96,16 @@ export function interact(life: Life, id: string, action: RelationshipAction, gif
     'Ask out':accepted ? `I asked ${person.name} out. ${capital} is now my ${person.gender==='Female'?'girlfriend':'boyfriend'}.` : `I asked ${person.name} out, but ${subject} politely declined.`,
     Compliment:response.text.replace(/^You /,'I ').replace(/your /g,'my '),Conversation:response.text.replace(/^You and (.*?) talked/, '$1 and I talked').replace(/your /g,'my '),Gift:!first?`I had already given ${person.name} a gift this year.`:gift ? `I gave ${person.name} ${gift.name.toLowerCase()} ($${gift.price}). ${response.delta<0?`${capital} did not appreciate the gift.`:`${capital} appreciated the gift.`}` : `I gave ${person.name} a gift. ${capital} appreciated the thought.`,
     'Make love':accepted?`I shared an intimate moment with ${person.name}.`:`${person.name} was not in the mood for intimacy.`,
-    'Have fun':accepted ? `I had fun with ${person.name}. We went bowling, played arcade games, and enjoyed an afternoon together.` : `I invited ${person.name} for an afternoon of games, but ${subject} declined.`,Insult:`I insulted ${person.name}. It hurt our relationship.`,
+    Insult:`I insulted ${person.name}. It hurt our relationship.`,
     'Spend time':`I spent time with ${person.name}. We ${spendActivity}.`,Unfriend:`I ended my friendship with ${person.name}.`
   };
   const status = action==='Break up'?(person.friendship?'friend':'acquaintance'):action==='Befriend' && accepted ? person.status==='dating'?'dating':'friend' : action === 'Unfriend' ? 'unfriended' : action === 'Ask out' && accepted ? 'dating' : person.status;
-  const always=['Befriend','Ask for money','Ask out','Insult','Act up','Disrespect'].includes(action) || ['Have fun','Hook up','Make love'].includes(action) && !accepted;
-  const successfulIntimacy=['Have fun','Hook up','Make love'].includes(action)&&accepted;
+  const always=['Befriend','Ask for money','Ask out','Insult','Act up','Disrespect'].includes(action) || ['Hook up','Make love'].includes(action) && !accepted;
+  const successfulIntimacy=['Hook up','Make love'].includes(action)&&accepted;
   const successfulUsed=previous?.successfulAge===life.age?previous.successfulActions??[]:[];
   const firstSuccessful=successfulIntimacy&&!successfulUsed.includes(action);
   const applyEffect=always || firstSuccessful || first;
-  const playerHappiness=action==='Befriend'?(accepted?25:-25):action==='Ask for money'?(given?5:-10):action==='Ask out'?(accepted?25:-25):successfulIntimacy?(firstSuccessful?Math.round(romance.yourEnjoyment/5):0):['Have fun','Hook up','Make love'].includes(action)?-20:action==='Break up'?-10:action==='Conversation'||action==='Flirt'?(first?response.delta:0):action==='Spend time'?(first?5:0):0;
+  const playerHappiness=action==='Befriend'?(accepted?25:-25):action==='Ask for money'?(given?5:-10):action==='Ask out'?(accepted?25:-25):successfulIntimacy?(firstSuccessful?Math.round(romance.yourEnjoyment/5):0):['Hook up','Make love'].includes(action)?-20:action==='Break up'?-10:action==='Conversation'||action==='Flirt'?(first?response.delta:0):action==='Spend time'?(first?5:0):0;
   const recipientHappiness=action==='Befriend'?(accepted?25:0):action==='Ask for money'?(!given&&!first?-5:0):action==='Ask out'?(accepted?25:0):successfulIntimacy?(firstSuccessful?intimacyGain:0):action==='Conversation'||action==='Flirt'||action==='Compliment'?(first?response.delta:0):action==='Gift'?(first?response.delta:0):action==='Insult'?-10:action==='Spend time'?(first?5:0):action==='Break up'?-25:action==='Unfriend'?-15:action==='Act up'?-10:action==='Disrespect'?-20:action==='Suck up'?(first?Math.max(0,Math.round(response.value/10)):0):0;
   const highSocial=first&&['Compliment','Conversation','Flirt','Gift','Suck up'].includes(action)&&response.value>75;
   const successfulSocial=action==='Befriend'&&accepted||action==='Ask out'&&accepted||firstSuccessful;
